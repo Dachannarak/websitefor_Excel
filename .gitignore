@@ -18,3 +18,12 @@ Thumbs.db
 # ข้อมูล Excel จริง — ไม่ track เข้า git
 *.xlsx
 *.xls
+
+# Node
+node_modules/
+
+# Backend runtime artifacts — ไฟล์ที่ผู้ใช้อัปโหลด/สร้างตอนรัน ไม่ใช่ source code
+Backend/uploads/
+Backend/preview_cache/
+Backend/backend_start.log
+Backend/python
