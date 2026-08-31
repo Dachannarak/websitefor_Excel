@@ -27,3 +27,7 @@ Backend/uploads/
 Backend/preview_cache/
 Backend/backend_start.log
 Backend/python
+Backend/*.log
+Backend/*.sql
+Backend/row1.txt
+Backend/ym_*.txt
