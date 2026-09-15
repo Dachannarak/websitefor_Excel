@@ -329,7 +329,7 @@ export function TimePickerScroll({ value = "", onChange, label = "เวลา" 
                       <ScrollWheel
                         label="ชั่วโมง"
                         value={Math.floor(start / 60)}
-                        onChange={(h) => setStart((s) => h * 60 + (s % 60))}
+                        onChange={(h) => pickStart(clampMinutes(h * 60 + (start % 60)))}
                         min={0}
                         max={23}
                       />
@@ -337,7 +337,7 @@ export function TimePickerScroll({ value = "", onChange, label = "เวลา" 
                       <ScrollWheel
                         label="นาที"
                         value={start % 60}
-                        onChange={(m) => setStart((s) => Math.floor(s / 60) * 60 + m)}
+                        onChange={(m) => pickStart(clampMinutes(Math.floor(start / 60) * 60 + m))}
                         min={0}
                         max={59}
                       />
