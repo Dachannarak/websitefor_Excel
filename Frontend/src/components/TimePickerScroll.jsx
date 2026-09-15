@@ -80,7 +80,7 @@ function parseClock(part) {
 
 /* จัดรูปแบบข้อความที่พิมพ์ให้เป็นมาตรฐาน "HH:MM - HH:MM น."
    ถ้าอ่านเป็นเวลาไม่ได้ → คืนข้อความเดิม (ไม่ทำข้อมูลหาย) */
-export function normalizeTimeText(raw) {
+function normalizeTimeText(raw) {
   const text = (raw || "").trim();
   if (!text) return "";
 
@@ -393,8 +393,10 @@ function ScrollWheel({ value, onChange, min, max, label }) {
   const idleTimer = useRef(null);
   const valueRef = useRef(value);
   const onChangeRef = useRef(onChange);
-  valueRef.current = value;
-  onChangeRef.current = onChange;
+  useEffect(() => {
+    valueRef.current = value;
+    onChangeRef.current = onChange;
+  });
 
   function alignTo(v) {
     const el = scrollRef.current;
