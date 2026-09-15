@@ -1,0 +1,579 @@
+/* ==========================================================================
+   home-ui-2.css — ปรับ UI หน้าแรก (รอบ 11 ก.ย. 2569)
+   1) หัวเว็บ (.home-hero)
+   2) การ์ดประชุมครั้งถัดไป (.next-meeting)
+   3) หัวข้อ section (.section-title)
+   4) การ์ดว่าง วันนี้/พรุ่งนี้ (.empty-day)
+   5) KPI เขียวชุดเดียว (.stat-box) — ต้องใช้คู่กับ stat-highlight.js
+   6) ประวัติอัปเดต + จำนวนข้อมูลทั้งหมด → ฟุตโน้ตท้ายหน้า
+   + dark mode ท้ายไฟล์
+
+   วิธีใช้: import ต่อท้าย CSS เดิมทั้งหมด (ไฟล์นี้แทน home-ui.css และ home-ui-2.css เวอร์ชันก่อน)
+   ใช้ prefix "html body" เพื่อให้ชนะ selector เดิมโดยไม่ต้องใช้ !important
+   .screen และ .empty-day ถูกใช้ในหน้าอื่นด้วย จึงจำกัดไว้เฉพาะหน้าแรกด้วย
+   .screen:has(> .home-hero)
+   ========================================================================== */
+
+
+/* ---------- 1) หัวเว็บ ---------- */
+html body .home-hero {
+  padding: 18px 20px;
+  border-radius: 16px;
+}
+html body .home-hero .home-hero-top {
+  gap: 10px;
+  align-items: center;
+}
+html body .home-hero .home-logo {
+  width: 40px;
+  height: 40px;
+  padding: 3px;
+}
+html body .home-hero .home-hero-org {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+html body .home-hero .home-hero-center-name {
+  font-size: 11.5px;
+  opacity: .72;
+  line-height: 1.4;
+}
+html body .home-hero .home-hero-divider {
+  margin: 14px 0;
+  background: rgba(255, 255, 255, .12);
+}
+html body .home-hero .home-hero-title {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+html body .home-hero .home-hero-sub {
+  font-size: 14px;
+  opacity: .75;
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+/* ปุ่มบนหัวเว็บ: ขนาดเท่ากันทุกปุ่ม */
+html body .home-hero .home-hero-actions {
+  margin-top: 16px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+html body .home-hero .home-hero-actions button {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  min-height: 0;
+  padding: 0 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: 10px;
+  box-shadow: none;
+  transition: background .15s, border-color .15s;
+}
+html body .home-hero .home-hero-actions button svg {
+  width: 15px;
+  height: 15px;
+  color: currentColor;
+  stroke: currentColor;
+}
+/* ปุ่มหลัก: อัปเดตข้อมูลตาราง */
+html body .home-hero .home-hero-actions .btn-update {
+  background: #fff;
+  color: #1B5E20;
+  border: 1px solid #fff;
+}
+html body .home-hero .home-hero-actions .btn-update:hover {
+  background: #F1F7F2;
+}
+/* ปุ่มรอง: ปริ้นตาราง / Export Excel */
+html body .home-hero .home-hero-actions .btn-print {
+  background: rgba(255, 255, 255, .08);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, .34);
+}
+html body .home-hero .home-hero-actions .btn-print:hover {
+  background: rgba(255, 255, 255, .16);
+  border-color: rgba(255, 255, 255, .5);
+}
+
+
+/* ---------- 2) การ์ดประชุมครั้งถัดไป ---------- */
+html body .next-meeting {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid #D3E3D6;
+  padding: 18px 20px 18px 24px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 6px 16px rgba(27, 94, 32, .06);
+}
+/* แถบเขียวด้านซ้าย = การ์ดสำคัญที่สุดของหน้า */
+html body .next-meeting::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #1B5E20;
+}
+html body .next-meeting .next-meeting-label {
+  min-height: 0;
+  height: auto;
+  margin: 0 0 10px;
+  align-items: center;
+}
+html body .next-meeting .next-meeting-label-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: auto;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1B5E20;
+}
+html body .next-meeting .next-meeting-label-icon {
+  width: 26px;
+  height: 26px;
+  background: #E8F2EA;
+  color: #1B5E20;
+}
+html body .next-meeting .next-meeting-label-icon svg {
+  width: 14px;
+  height: 14px;
+}
+html body .next-meeting .next-meeting-countdown {
+  height: auto;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #E8F2EA;
+  color: #1B5E20;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+html body .next-meeting .next-meeting-title {
+  margin: 0 0 10px;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #101828;
+}
+/* วัน · เวลา · หน่วยงาน เรียงแถวเดียว (ขึ้นบรรทัดใหม่เองถ้าจอแคบ) */
+html body .next-meeting .next-meeting-info {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 20px;
+  margin: 0;
+}
+html body .next-meeting .next-meeting-info-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  margin: 0;
+  font-size: 13.5px;
+  color: #475467;
+}
+html body .next-meeting .next-meeting-info-row svg {
+  width: 15px;
+  height: 15px;
+  color: #667085;
+}
+html body .next-meeting .next-meeting-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: 40px;
+  margin-top: 16px;
+  padding: 0 18px;
+  border-radius: 10px;
+  background: #1B5E20;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: none;
+}
+html body .next-meeting .next-meeting-btn:hover {
+  background: #154A19;
+}
+@media (max-width: 560px) {
+  html body .next-meeting .next-meeting-btn {
+    width: 100%;
+  }
+}
+
+
+/* ---------- 3) หัวข้อ section ---------- */
+/* เลิกเป็นกล่องขาวขอบเขียวโค้ง → หัวข้อบนพื้น + ขีดเขียวสั้นด้านซ้าย */
+html body .section-title {
+  position: relative;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 0;
+  padding: 22px 2px 10px 14px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #101828;
+}
+html body .section-title::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  margin-top: 6px; /* ชดเชย padding บน/ล่างที่ไม่เท่ากัน */
+  transform: translateY(-50%);
+  width: 4px;
+  height: 18px;
+  border-radius: 2px;
+  background: #1B5E20;
+}
+html body .section-title .section-date {
+  margin-left: 2px;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: #667085;
+}
+html body .section-title .section-count {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #F2F4F7;
+  color: #475467;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+/* พื้นหลังกล่อง KPI เดิมเป็นขาวต่อจากหัวข้อ → ทำให้โปร่ง */
+html body .stats-grid {
+  background: transparent;
+  padding: 0;
+}
+
+
+
+/* ---------- 4) การ์ดว่าง วันนี้/พรุ่งนี้ → แถบบาง ---------- */
+html body .screen:has(> .home-hero) > .empty-day {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 0;
+  padding: 10px 14px;
+  background: transparent;
+  border: 1px dashed #D0D5DD;
+  border-radius: 10px;
+  box-shadow: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #667085;
+  text-align: left;
+}
+/* ซ่อนไอคอนเดิม (มีแค่ใบพรุ่งนี้) แล้วใส่ไอคอนปฏิทินเทาให้ทั้ง 2 ใบ */
+html body .screen:has(> .home-hero) > .empty-day > svg {
+  display: none;
+}
+html body .screen:has(> .home-hero) > .empty-day::before {
+  content: "";
+  flex: none;
+  width: 16px;
+  height: 16px;
+  background: #98A2B3;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+/* วันที่ไม่มีประชุม: ซ่อนพิล "0 รายการ" (ซ้ำกับข้อความในแถบ) */
+html body .section-title:has(+ .empty-day) .section-count {
+  display: none;
+}
+
+
+/* ---------- 5) KPI: เขียวชุดเดียว เน้นเฉพาะใบที่มีค่า ---------- */
+/* ใบที่ค่า > 0 = เขียว, ใบที่เป็น 0 = เทา (stat-highlight.js ใส่ data-has="1"/"0") */
+html body .stats-grid {
+  gap: 8px;
+}
+html body .stats-grid .stat-box[class] {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  min-height: 0;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid #EAECF0;
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+  text-align: left;
+}
+html body .stats-grid .stat-box[class] .stat-emoji {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #F2F4F7;
+  color: #98A2B3;
+}
+html body .stats-grid .stat-box[class] .stat-emoji svg {
+  width: 18px;
+  height: 18px;
+}
+html body .stats-grid .stat-box[class] .stat-info {
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+html body .stats-grid .stat-box[class] .stat-n {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #98A2B3;
+}
+html body .stats-grid .stat-box[class] .stat-l {
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #667085;
+}
+/* พิล "x รายการ" ซ้ำกับตัวเลขใหญ่ */
+html body .stats-grid .stat-box[class] .stat-badge {
+  display: none;
+}
+html body .stats-grid .stat-box[class][data-has="1"] {
+  border-color: #D3E3D6;
+}
+html body .stats-grid .stat-box[class][data-has="1"] .stat-emoji {
+  background: #E8F2EA;
+  color: #1B5E20;
+}
+html body .stats-grid .stat-box[class][data-has="1"] .stat-n {
+  color: #1B5E20;
+}
+html body .stats-grid .stat-box[class][data-has="1"] .stat-l {
+  color: #344054;
+}
+
+
+/* ---------- 6) ประวัติอัปเดต + จำนวนข้อมูลทั้งหมด → ฟุตโน้ตท้ายหน้า ---------- */
+/* ย้ายลงล่างสุด (ใต้ "พรุ่งนี้") ด้วย flex order — ไม่ต้องแก้ JSX */
+html body .screen:has(> .home-hero) {
+  display: flex;
+  flex-direction: column;
+}
+html body .screen:has(> .home-hero) > .upload-history-card {
+  order: 98;
+}
+html body .screen:has(> .home-hero) > .total-badge {
+  order: 99;
+}
+html body .screen:has(> .home-hero) > :last-child:empty {
+  order: 100; /* ช่องว่างท้ายหน้าเดิม */
+}
+html body .screen .upload-history-card {
+  margin-top: 24px;
+  padding: 14px 2px 0;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid #EAECF0;
+  border-radius: 0;
+  box-shadow: none;
+}
+html body .screen .upload-history-card .upload-history-header {
+  margin: 0 0 6px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #475467;
+}
+html body .screen .upload-history-card .upload-history-header svg {
+  width: 14px;
+  height: 14px;
+  color: #667085;
+}
+html body .screen .upload-history-card .upload-history-body {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 18px;
+  padding: 0;
+}
+html body .screen .upload-history-card .upload-history-col {
+  flex: none;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+}
+html body .screen .upload-history-card .upload-history-icon-row {
+  gap: 4px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #667085;
+}
+/* CSS เดิมมี .upload-history-col:first-child .upload-history-icon-row .icon (แรง 0,4,0) */
+html body .screen .upload-history-card .upload-history-col .upload-history-icon-row svg {
+  width: 13px;
+  height: 13px;
+  color: #98A2B3;
+}
+html body .screen .upload-history-card .upload-history-num {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: #475467;
+}
+html body .screen .upload-history-card .upload-history-unit {
+  font-size: 12.5px;
+  color: #667085;
+}
+html body .screen .upload-history-card .upload-history-vline {
+  display: none;
+}
+html body .screen .upload-history-card .upload-history-footer {
+  justify-content: flex-start;
+  margin: 0;
+  padding: 4px 0 0;
+  background: transparent;
+  border: 0;
+  font-size: 12px;
+  color: #98A2B3;
+}
+/* "ข้อมูลในระบบทั้งหมด 571 รายการ" */
+html body .screen .total-badge {
+  margin: 2px 0 0;
+  padding: 0 2px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 400;
+  color: #98A2B3;
+}
+
+
+/* ==========================================================================
+   Dark mode
+   ========================================================================== */
+[data-theme="dark"] body .home-hero .home-hero-actions .btn-update {
+  background: #E8F2EA;
+  border-color: #E8F2EA;
+  color: #1B5E20;
+}
+
+[data-theme="dark"] body .next-meeting {
+  border-color: rgba(255, 255, 255, .1);
+  box-shadow: none;
+}
+[data-theme="dark"] body .next-meeting::before {
+  background: #4CAF50;
+}
+[data-theme="dark"] body .next-meeting .next-meeting-label-left {
+  color: #81C784;
+}
+[data-theme="dark"] body .next-meeting .next-meeting-label-icon,
+[data-theme="dark"] body .next-meeting .next-meeting-countdown {
+  background: rgba(129, 199, 132, .14);
+  color: #A5D6A7;
+}
+[data-theme="dark"] body .next-meeting .next-meeting-title {
+  color: #F3F4F6;
+}
+[data-theme="dark"] body .next-meeting .next-meeting-info-row {
+  color: #B0B7C3;
+}
+[data-theme="dark"] body .next-meeting .next-meeting-info-row svg {
+  color: #8A93A1;
+}
+[data-theme="dark"] body .next-meeting .next-meeting-btn {
+  background: #2E7D32;
+}
+
+[data-theme="dark"] body .section-title {
+  background: transparent;
+  color: #F3F4F6;
+}
+[data-theme="dark"] body .section-title::before {
+  background: #4CAF50;
+}
+[data-theme="dark"] body .section-title .section-date {
+  color: #9CA3AF;
+}
+[data-theme="dark"] body .section-title .section-count {
+  background: rgba(255, 255, 255, .08);
+  color: #D0D5DD;
+}
+[data-theme="dark"] body .stats-grid {
+  background: transparent;
+}
+
+[data-theme="dark"] body .screen:has(> .home-hero) > .empty-day {
+  background: transparent;
+  border-color: rgba(255, 255, 255, .16);
+  color: #9CA3AF;
+}
+[data-theme="dark"] body .screen:has(> .home-hero) > .empty-day::before {
+  background: #6B7280;
+}
+
+[data-theme="dark"] body .stats-grid .stat-box[class] {
+  background: transparent;
+  border-color: rgba(255, 255, 255, .1);
+  box-shadow: none;
+}
+[data-theme="dark"] body .stats-grid .stat-box[class] .stat-emoji {
+  background: rgba(255, 255, 255, .06);
+  color: #6B7280;
+}
+[data-theme="dark"] body .stats-grid .stat-box[class] .stat-n {
+  color: #6B7280;
+}
+[data-theme="dark"] body .stats-grid .stat-box[class] .stat-l {
+  color: #9CA3AF;
+}
+[data-theme="dark"] body .stats-grid .stat-box[class][data-has="1"] {
+  border-color: rgba(129, 199, 132, .3);
+}
+[data-theme="dark"] body .stats-grid .stat-box[class][data-has="1"] .stat-emoji {
+  background: rgba(129, 199, 132, .14);
+  color: #A5D6A7;
+}
+[data-theme="dark"] body .stats-grid .stat-box[class][data-has="1"] .stat-n {
+  color: #A5D6A7;
+}
+[data-theme="dark"] body .stats-grid .stat-box[class][data-has="1"] .stat-l {
+  color: #D0D5DD;
+}
+
+[data-theme="dark"] body .screen .upload-history-card {
+  background: transparent;
+  border-top-color: rgba(255, 255, 255, .1);
+}
+[data-theme="dark"] body .screen .upload-history-card .upload-history-header,
+[data-theme="dark"] body .screen .upload-history-card .upload-history-num {
+  color: #D0D5DD;
+}
+[data-theme="dark"] body .screen .upload-history-card .upload-history-icon-row,
+[data-theme="dark"] body .screen .upload-history-card .upload-history-unit {
+  color: #9CA3AF;
+}
+[data-theme="dark"] body .screen .upload-history-card .upload-history-footer,
+[data-theme="dark"] body .screen .total-badge {
+  background: transparent;
+  color: #6B7280;
+}

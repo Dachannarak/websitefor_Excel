@@ -2,6 +2,7 @@ import { useState } from "react";
 import Icon from "../Icon";
 import { API } from "../api/events";
 import { MONTHS_TH, toDateStr, formatDateTH } from "../utils/date";
+import { beToCeYear } from "../utils/dateUtils";
 import { showToast } from "../utils/toast";
 
 // ---------------------------------------------------------------------------
@@ -34,12 +35,14 @@ export default function PrintSheet({ events, onClose }) {
   const curWeekStart = toDateStr(_d);
 
   function _weekStart(dateStr) {
-    const d = new Date(dateStr+"T00:00:00");
+    const [y, m, dd] = dateStr.split("-").map(Number);
+    const d = new Date(beToCeYear(y), m - 1, dd);
     d.setDate(d.getDate() - (d.getDay()===0 ? 6 : d.getDay()-1));
     return toDateStr(d);
   }
   function _weekEnd(ws) {
-    const d = new Date(ws+"T00:00:00");
+    const [y, m, dd] = ws.split("-").map(Number);
+    const d = new Date(beToCeYear(y), m - 1, dd);
     d.setDate(d.getDate()+6);
     return toDateStr(d);
   }
@@ -55,7 +58,7 @@ export default function PrintSheet({ events, onClose }) {
   const weeks = Object.values(weekMap).sort((a,b)=>a.ss.localeCompare(b.ss));
 
   function doMonthPrint(m) {
-    const url = `${API}/report/print?year=${m.year+543}&month=${m.month}`;
+    const url = `${API}/report/print?year=${m.year}&month=${m.month}`;
     window.open(url,"_blank");
     showToast("เปิดหน้าปริ้นแล้ว");
     onClose();
@@ -80,7 +83,7 @@ export default function PrintSheet({ events, onClose }) {
           {mode==="month" && months.length===0 && <div className="print-empty">ยังไม่มีข้อมูล</div>}
           {mode==="month" && months.map(m=>(
             <button key={`${m.year}-${m.month}`} className="print-item" onClick={()=>doMonthPrint(m)}>
-              <span className="print-item-label">{MONTHS_TH[m.month]} {m.year+543}</span>
+              <span className="print-item-label">{MONTHS_TH[m.month]} {m.year}</span>
               <span className="print-item-count">{m.count} รายการ</span>
               <Icon name="printer" size={15}/>
             </button>

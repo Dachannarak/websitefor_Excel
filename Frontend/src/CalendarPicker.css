@@ -1,0 +1,288 @@
+/* ---------- ช่องวันที่: พิมพ์ได้ + ปุ่มล้าง + ปุ่มปฏิทิน ---------- */
+.thai-date-picker-display {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.thai-date-picker-input {
+    width: 100% !important;
+    padding-right: 76px !important;
+    text-align: left;
+    cursor: text;
+}
+.thai-date-picker-field-btns {
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    transform: translateY(-50%);
+}
+.thai-date-picker-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: #6B6862;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+}
+.thai-date-picker-icon-btn:hover {
+    background: #F1F7F2;
+    color: #202124;
+}
+.thai-date-picker-open {
+    color: #1B5E20;
+}
+.thai-date-picker-open:hover {
+    color: #1B5E20;
+}
+.thai-date-picker-clear:hover {
+    color: #EF4444;
+}
+[data-theme="dark"] .thai-date-picker-icon-btn {
+    color: #97979F;
+}
+[data-theme="dark"] .thai-date-picker-icon-btn:hover {
+    background: rgba(255, 255, 255, .08);
+    color: #EDEDEF;
+}
+[data-theme="dark"] .thai-date-picker-open {
+    color: #A5D6A7;
+}
+
+.calendar {
+    font-family: 'Sarabun', sans-serif;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    padding: 24px;
+    max-width: 380px;
+    margin: 0 auto;
+    border: 1px solid #e8eaed;
+}
+
+/* Title */
+.calendar__title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1B5E20;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Options (Month/Year Select) */
+.calendar__opts {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.calendar__opts select {
+    flex: 1;
+    padding: 10px 14px;
+    border: 2px solid #e8eaed;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'Sarabun', sans-serif;
+    cursor: pointer;
+    background: white;
+    color: #202124;
+    transition: all 0.3s ease;
+}
+
+.calendar__opts select:hover {
+    border-color: #1B5E20;
+    box-shadow: 0 2px 8px rgba(27, 94, 32, 0.1);
+}
+
+.calendar__opts select:focus {
+    outline: none;
+    border-color: #1B5E20;
+    box-shadow: 0 0 0 3px rgba(27, 94, 32, 0.1);
+}
+
+/* Calendar Body */
+.calendar__body {
+    margin-bottom: 20px;
+}
+
+/* Days of week header */
+.calendar__days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+    font-weight: 600;
+    color: #1B5E20;
+    text-align: center;
+    font-size: 12px;
+}
+
+.calendar__days div {
+    padding: 10px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Calendar dates */
+.calendar__dates {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+}
+
+.calendar__date {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #202124;
+    background: #f8f9fa;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.calendar__date:hover {
+    background: #e8f5e9;
+    border-color: #1B5E20;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(27, 94, 32, 0.15);
+}
+
+/* Grey dates (previous/next month) */
+.calendar__date--grey {
+    color: #bdc3c7;
+    background: #fafafa;
+    cursor: not-allowed;
+}
+
+.calendar__date--grey:hover {
+    background: #fafafa;
+    border-color: transparent;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Selected dates (in range) */
+.calendar__date--selected {
+    background: linear-gradient(135deg, #1B5E20 0%, #0d3a0a 100%);
+    color: white;
+    border-color: #1B5E20;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(27, 94, 32, 0.3);
+}
+
+.calendar__date--selected:hover {
+    background: linear-gradient(135deg, #164a1a 0%, #0a2808 100%);
+    border-color: #0a2808;
+    box-shadow: 0 6px 16px rgba(27, 94, 32, 0.4);
+}
+
+/* Range styling */
+.calendar__date--range-start {
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
+
+.calendar__date--range-end {
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+.calendar__date--range-start::after,
+.calendar__date--range-end::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Buttons */
+.calendar__buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.calendar__button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px 16px;
+    border: 2px solid #e8eaed;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'Sarabun', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.calendar__button svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.calendar__button--grey {
+    background: #f5f5f5;
+    color: #666;
+    border-color: #e8eaed;
+}
+
+.calendar__button--grey:hover {
+    background: #eeeeee;
+    border-color: #999;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.calendar__button--primary {
+    background: linear-gradient(135deg, #1B5E20 0%, #0d3a0a 100%);
+    color: white;
+    border-color: #1B5E20;
+}
+
+.calendar__button--primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .calendar {
+        padding: 16px;
+        max-width: 100%;
+    }
+
+    .calendar__date {
+        font-size: 12px;
+    }
+
+    .calendar__opts select {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+
+    .calendar__button {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+}

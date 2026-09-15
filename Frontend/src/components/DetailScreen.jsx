@@ -1,16 +1,17 @@
 import { useState, useRef, useEffect } from "react";
 import Icon from "../Icon";
-import { deleteEventById } from "../api/events";
+import { deleteEventById, restoreEventById, permanentDeleteEventById } from "../api/events";
 import { getDayCls, dayOfWeekTH, formatDateTH } from "../utils/date";
 import { getStatusCls, getStatusLabel, getAppCls, getAppLabel } from "../utils/eventStyle";
 import { showToast } from "../utils/toast";
 import ConfirmSheet from "./ConfirmSheet";
 
 // ---------------------------------------------------------------------------
-// หน้ารายละเอียด
+// หน้ารายละเอียด — isTrashView=true เมื่อเปิดจากถังขยะ (กู้คืน/ลบถาวร แทนแก้ไข/ลบ)
 // ---------------------------------------------------------------------------
-export default function DetailScreen({ event, events = [], onNavigate, onBack, onEdit, onDeleted }) {
+export default function DetailScreen({ event, events = [], onNavigate, onBack, onEdit, onDeleted, isTrashView = false, onRestored }) {
   const [deleting,    setDeleting]    = useState(false);
+  const [restoring,   setRestoring]   = useState(false);
   const [delErr,      setDelErr]      = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -37,11 +38,23 @@ export default function DetailScreen({ event, events = [], onNavigate, onBack, o
   async function handleDelete() {
     setDeleting(true); setDelErr(null);
     try {
-      await deleteEventById(event.id);
+      if (isTrashView) await permanentDeleteEventById(event.id);
+      else await deleteEventById(event.id);
       onDeleted();
       if (window.history.state?.detail) window.history.back();
     } catch(e) { setDelErr(e.message); setConfirmOpen(false); }
     finally { setDeleting(false); }
+  }
+
+  async function handleRestore() {
+    setRestoring(true); setDelErr(null);
+    try {
+      await restoreEventById(event.id);
+      showToast(`กู้คืน "${event.title}" แล้ว`);
+      onRestored?.();
+      if (window.history.state?.detail) window.history.back();
+    } catch(e) { setDelErr(e.message); }
+    finally { setRestoring(false); }
   }
 
   return (
@@ -80,10 +93,6 @@ export default function DetailScreen({ event, events = [], onNavigate, onBack, o
         </div>
       </div>
       <div className="detail-body">
-        {event.image_url && (
-          <img src={event.image_url} alt="รูปประกอบ"
-            style={{width:"100%", maxWidth:400, borderRadius:10, marginBottom:12}}/>
-        )}
         {[
           {icon:"clock",         label:"เวลา",          val:event.time_raw},
           {icon:"mapPin",        label:"สถานที่",        val:event.location},
@@ -129,18 +138,28 @@ export default function DetailScreen({ event, events = [], onNavigate, onBack, o
           </div>
         )}
         <div className="detail-edit-bar">
-          <button className="btn-edit" onClick={onEdit}><Icon name="edit" size={15}/> แก้ไขรายการนี้</button>
+          {isTrashView ? (
+            <button className="btn-edit" onClick={handleRestore} disabled={restoring}>
+              {restoring ? "กำลังกู้คืน..." : <><Icon name="history" size={15}/> กู้คืนรายการนี้</>}
+            </button>
+          ) : (
+            <button className="btn-edit" onClick={onEdit}><Icon name="edit" size={15}/> แก้ไขรายการนี้</button>
+          )}
           <button className="btn-delete" onClick={()=>setConfirmOpen(true)} disabled={deleting}>
-            {deleting ? "กำลังลบ..." : <><Icon name="trash" size={16}/> ลบรายการนี้</>}
+            {deleting ? "กำลังลบ..." : <><Icon name="trash" size={16}/> {isTrashView ? "ลบถาวร" : "ลบรายการนี้"}</>}
           </button>
           {delErr && <div className="form-err"><Icon name="xCircle" size={16}/> {delErr}</div>}
         </div>
       </div>
       {confirmOpen && (
         <ConfirmSheet
-          title="ยืนยันการลบรายการนี้?"
-          message={event.title ? `"${event.title}" — กู้คืนได้ภายหลังจากถังขยะ` : undefined}
-          confirmLabel="ลบรายการ"
+          title={isTrashView ? "ลบถาวรรายการนี้?" : "ยืนยันการลบรายการนี้?"}
+          message={
+            event.title
+              ? (isTrashView ? `"${event.title}" — ไม่สามารถกู้คืนได้อีก` : `"${event.title}" — กู้คืนได้ภายหลังจากถังขยะ`)
+              : undefined
+          }
+          confirmLabel={isTrashView ? "ลบถาวร" : "ลบรายการ"}
           danger
           busy={deleting}
           onConfirm={handleDelete}

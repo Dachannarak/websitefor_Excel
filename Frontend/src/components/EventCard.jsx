@@ -11,6 +11,7 @@ export default function EventCard({ ev, onSelect }) {
   <div className={`ev-card ${getEventTypeCls(ev) || getCategoryCls(ev)} ${dayCls}`} onClick={()=>onSelect(ev)}>
     <div className="ev-card-bar"/>
       <div className="ev-card-body">
+        <div className="ev-card-title">{ev.title || "(ไม่มีชื่อ)"}</div>
         <div className="ev-card-time-row">
           <span className="ev-card-time"><Icon name="clock" size={11}/> {ev.time_raw||"-"}</span>
         {ev.department && <span className="ev-card-meta-dot">{ev.department}</span>}

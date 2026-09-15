@@ -7,7 +7,7 @@ from typing import Optional
 
 from ..database import get_db
 from ..models import ConferenceEvent
-from ..services.conference_service import MONTH_TH_TO_NUM
+from ..services.conference_service import MONTH_TH_TO_NUM, be_to_ce_year, ce_to_be_year
 
 router = APIRouter (prefix="/report", tags=["Reports"])
 
@@ -18,9 +18,13 @@ DAY_FULL = ["อาทิตย์","จันทร์","อังคาร","�
 DAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat']
 
 def _weekday_idx(date_val) -> Optional[int]:
-    """Sunday=0 ... Saturday=6 ตาม DAY_KEYS/DAY_FULL, คืน None ถ้า parse ไม่ได้"""
+    """Sunday=0 ... Saturday=6 ตาม DAY_KEYS/DAY_FULL, คืน None ถ้า parse ไม่ได้
+    date_val เป็นปี พ.ศ. เสมอ (ตรงกับที่เก็บใน DB หลัง migration) — ต้องแปลงเป็น ค.ศ.
+    ก่อนคำนวณวันในสัปดาห์ เพราะ 543 ไม่ใช่ผลคูณของ 7
+    """
     try:
-        return date.fromisoformat(str(date_val)).isoweekday() % 7
+        d = date.fromisoformat(str(date_val))
+        return date(be_to_ce_year(d.year), d.month, d.day).isoweekday() % 7
     except (ValueError, TypeError):
         return None
 
@@ -31,7 +35,7 @@ def format_date_th(date_str: str, short=False) -> str:
     d = date.fromisoformat(date_str)
     day = DAY_FULL[idx]
     month = MONTHS_TH[d.month]
-    year = d.year + 543
+    year = d.year  # d.year เป็น พ.ศ. อยู่แล้ว (ตรงกับที่เก็บใน DB)
     if short:
         return f"{d.day} {month[:3]}. {year}"
     return f"วัน{day}ที่ {d.day} {month} พ.ศ. {year}"
@@ -168,7 +172,7 @@ table {
 .day-total-icon svg{width:13px;height:13px}
 .day-peak-box{display:flex;align-items:center;gap:10px;background:#F0F5F1;border-radius:6px;padding:10px 16px;font-size:9.5pt;color:#333}
 .day-peak-star{display:inline-flex;align-items:center;gap:4px;background:#1B5E20;color:#fff;padding:3px 10px;border-radius:4px;font-size:8.5pt;font-weight:700}
-.day-yaxis-unit{font-size:7.5pt;color:#888;margin-bottom:6px}
+.day-yaxis-unit{font-size:7.5pt;color:#000;margin-bottom:6px}
 .day-summary-table{width:100%;border-collapse:collapse;font-size:9pt;margin-top:20px;border:1px solid #ddd}
 .day-summary-table th{background:#F5F5F5;color:#333;padding:8px;font-weight:700;border:1px solid #ddd;text-align:center}
 .day-summary-table td{padding:8px;border:1px solid #ddd;text-align:center;color:#333}
@@ -179,10 +183,10 @@ table {
 
 .usage-row{display:flex;flex-direction:column;gap:32px;width:100%}
 .usage-block{display:flex;flex-direction:column;align-items:center;width:100%}
-.usage-block-divider{padding-top:28px;border-top:1px dashed #ddd}
+.usage-block-divider{padding:24px;border:1px solid #e3e8e4;border-radius:14px;background:#fff;box-shadow:0 2px 10px rgba(27,94,32,.06)}
 .usage-total-note{text-align:center;font-size:9pt;color:#888;margin-top:18px;padding-top:14px;border-top:1px dashed #ddd;width:100%}
 .trend-header-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
-.trend-unit{font-size:8.5pt;color:#999}
+.trend-subtitle{font-size:10pt;font-weight:700;color:#333}
 .trend-chart-row{display:flex;gap:20px;align-items:flex-start}
 .trend-chart-svg{flex:1;min-width:0}
 .trend-legend{display:flex;flex-direction:column;gap:9px;flex-shrink:0;padding-top:8px}
@@ -239,7 +243,7 @@ table {
 .app-mini-list{flex:1;display:flex;flex-direction:column;width:100%;max-width:520px;margin:0 auto}
 .mini-list-heading{display:flex;justify-content:space-between;align-items:baseline;border-top:1px dashed #ccc;padding-top:20px;margin-top:8px;margin-bottom:16px}
 .mini-list-heading-title{font-size:13px;font-weight:700;color:#1B5E20}
-.mini-list-heading-unit{font-size:12px;color:#888}
+.mini-list-heading-unit{font-size:12px;color:#000}
 .app-mini-row2{display:flex;align-items:center;gap:12px;width:100%;margin-bottom:16px}
 .app-mini-dot{flex:0 0 10px;width:10px;height:10px;border-radius:50%}
 .app-mini-icon{flex:0 0 22px;width:22px;height:22px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
@@ -254,7 +258,7 @@ table {
 
 .day-chart-wrap{display:flex;gap:8px;width:100%}
 .day-yaxis{display:flex;flex-direction:column;justify-content:space-between;padding-bottom:26px;flex-shrink:0}
-.day-yaxis-unit{font-size:7.5pt;color:#aaa;font-weight:600;margin-bottom:4px}
+.day-yaxis-unit{font-size:7.5pt;color:#000;font-weight:600;margin-bottom:4px}
 .day-ytick{font-size:8pt;color:#888;font-weight:600}
 .day-chart{display:flex!important;gap:8px;align-items:flex-end!important;height:110px;padding:28px 4px 0;flex:1;border-left:1.5px solid #999;border-bottom:1.5px solid #999;position:relative}
 .day-chart-gridline{position:absolute;left:0;right:0;border-top:1px dashed #d0d0d0;z-index:0}
@@ -300,63 +304,6 @@ tr:nth-child(even) td{background:#fafafa}
 .sign-box .sign-line,.sign-box .sign-name{margin:6px 0}
 .sign-box .sign-role{font-weight:700;margin:10px 0 6px;color:#0b3d24}
 .sign-box .sign-position,.sign-box .sign-date{margin:4px 0;color:#374151}
-
-@media print{
-  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
-  body{background:#fff;font-size:9pt;display:block!important}
-  .page{padding:1cm;max-width:none;box-shadow:none;width:100%;display:block!important}
-  /* flex+justify-content:center บนแกนตั้งทำให้ Chrome คำนวณตำแหน่งเพี้ยนตอนแบ่งหน้าพิมพ์ (เนื้อหา/รูปภาพลอยขึ้นเกินขอบบน) — ตัดกลับเป็น flex-start เฉพาะตอนพิมพ์ */
-  .hdr,.section,.table-card,.gov-header,.gov-signature,.footer,
-  .chart-card,.chart-card-formal,header,
-  .stats-grid,.usage-row,.kpi-row,.kpi-row2,.day-summary-row,.insight-list{
-    justify-content:flex-start!important;
-  }
-  .btn-print,.print-btn{display:none}
-  thead{display:table-header-group}
-  .table-card{overflow:visible}
-  td,th{border-left:none;border-right:none}
-  .section{margin-bottom:10px}
-  .chart-card-formal{padding:14px 16px!important}
-  .kpi-row2{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:8px!important}
-  .kpi-box2{padding:10px!important}
-  .kpi-num2{font-size:14pt!important}
-  .kpi-icon2{width:28px!important;height:28px!important;font-size:12px!important}
-
-  .usage-row{display:grid!important;grid-template-columns:220px 1fr!important;gap:14px!important}
-  .donut-hole{width:62%!important;height:62%!important}
-  .donut-hole-pct{font-size:14pt!important}
-  .donut-hole-lbl{font-size:7.5pt!important}
-  .app-mini-row2{margin-bottom:8px!important}
-  .app-mini-name{font-size:9pt!important}
-
-  .trend-chart-svg svg{width:100%!important;height:auto!important}
-  .trend-table{font-size:6.5pt!important}
-  .trend-table th,.trend-table td{padding:3px 2px!important}
-  .day-summary-row{margin:8px 0!important}
-  .day-chart-wrap{margin-top:8px!important}
-  .day-chart{height:70px!important;padding:18px 4px 0!important}
-  .day-summary-table{margin-top:10px!important;font-size:9pt!important}
-  .day-summary-table th,.day-summary-table td{padding:5px!important}
-  .day-note{margin-top:4px!important}
-  .insight-item{padding:8px 10px!important;gap:8px!important}
-  .insight-title{font-size:9pt!important;line-height:1.3!important}
-  .insight-sub{font-size:8pt!important;line-height:1.35!important;margin-top:2px!important}
-  .gov-header{padding:12px 16px!important}
-  .gov-header-text h1{font-size:12pt!important}
-  .gov-header,.kpi-row2,.day-summary-row,
-  .insight-item,.sign-box,.day-summary-table{break-inside:avoid}
-  .section-title2,.chart-title2{break-after:avoid!important;break-inside:avoid!important}
-  .section-pagebreak{break-before:page!important}
-  @page{
-    margin:1cm 1cm 1.5cm 1cm;
-    size:A4;
-    @bottom-center{
-      content:"หน้า " counter(page) " จาก " counter(pages);
-      font-size:8pt;
-      color:#888;
-    }
-  }
-}
 
 .section-title2{display:flex;align-items:center;gap:9px;font-size:11pt;font-weight:700;color:#111;margin-bottom:14px;padding-bottom:8px;border-bottom:1.5px solid #1B5E20}
 .section-icon{width:4px;height:16px;border-radius:1px;background:#1B5E20;display:inline-block}
@@ -408,50 +355,9 @@ tr:nth-child(even) td{background:#fafafa}
   .insight-item{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 
-/* ===== MOBILE (หน้าจอมือถือ ไม่ใช่ตอนพิมพ์) ===== */
-@media screen and (max-width:640px){
-  .page{padding:20px 14px}
-  .gov-header{padding:14px 16px}
-  .gov-header-top{gap:12px}
-  .gov-header-text{min-width:0}
-  .gov-header-text h1{font-size:11pt}
-  .gov-org-name{font-size:8.5pt}
-  .gov-header-meta{gap:10px;font-size:8pt}
-  .gov-emblem{width:42px;height:42px}
-
-  .chart-card-formal{padding:18px 14px!important}
-  .section-title2,.chart-title2{font-size:9.5pt;flex-wrap:wrap}
-
-  .kpi-row2{grid-template-columns:repeat(2,1fr)}
-  .kpi-num2{font-size:15pt;white-space:normal}
-  .kpi-lbl2{white-space:normal}
-
-  .app-mini-list{max-width:100%}
-  .app-mini-name{flex:0 0 68px!important;font-size:11px!important}
-  .app-mini-pct{flex:0 0 32px!important;font-size:11px!important}
-  .app-mini-count{flex:0 0 50px!important;font-size:10px!important}
-  .mini-list-heading{flex-wrap:wrap;gap:4px}
-  .trend-header-row{flex-wrap:wrap;gap:4px}
-
-  .trend-table,.day-summary-table,.table-card table{display:block;overflow-x:auto;white-space:nowrap}
-  .trend-table thead,.day-summary-table thead{display:table-header-group}
-  .trend-table tbody,.day-summary-table tbody{display:table-row-group}
-  .trend-table tr,.day-summary-table tr{display:table-row}
-  .trend-table th,.trend-table td,.day-summary-table th,.day-summary-table td{display:table-cell}
-  .trend-table{min-width:560px}
-  .day-summary-table{min-width:480px}
-  .table-card{overflow-x:auto}
-  .table-card table{min-width:640px}
-
-  .day-chart-wrap{overflow-x:auto}
-  .day-chart{min-width:480px}
-
-  .insight-item{padding:14px 16px}
-  .insight-title{font-size:9.5pt}
-  .insight-sub{font-size:8.5pt}
-
-  .gov-signature{flex-direction:column;gap:16px}
-}
+/* หมายเหตุ: @media screen and (max-width:640px) ตัวเก่าถูกลบออก (รวมเข้ากับ
+   @media screen and (max-width:768px)/(max-width:480px) ท้ายไฟล์แล้ว เพื่อไม่ให้
+   สองชุด breakpoint ชนกันเอง — ดูจุดนั้นสำหรับ mobile styles ทั้งหมด) */
 
 /* =========================================================
    Redesign: หัวข้อ "4. วันที่มีการประชุมบ่อย" (การ์ดกราฟ + ตาราง)
@@ -592,8 +498,14 @@ tr:nth-child(even) td{background:#fafafa}
    การใช้งานแพลตฟอร์มย้อนหลัง 6 เดือน (กราฟเส้น + ตาราง)
    =========================================================== */
 .usage-block{ padding:4px 2px !important; }
+.usage-block:not(.usage-block-divider){
+  padding:24px !important;
+  border:1px solid #e3e8e4 !important;
+  border-radius:14px !important;
+  background:#fff !important;
+  box-shadow:0 2px 10px rgba(27,94,32,.06) !important;
+}
 .trend-header-row{ margin-bottom:20px !important; }
-.trend-unit{ font-size:8pt !important; color:#a3aba4 !important; font-weight:600 !important; }
 
 .trend-chart-row{ gap:28px !important; align-items:center !important; }
 .trend-chart-svg line{ stroke:#eef1ee !important; stroke-dasharray:3,3 !important; }
@@ -845,6 +757,615 @@ tr:nth-child(even) td{background:#fafafa}
     border-bottom:none !important;
   }
 }
+
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+  body{background:#fff;font-size:8pt;display:block!important}
+  .page{padding:0.8cm;max-width:none;box-shadow:none;width:100%;display:block!important}
+  .hdr,.section,.table-card,.gov-header,.gov-signature,.footer,.chart-card,.chart-card-formal,header,.stats-grid,.insight-list{justify-content:flex-start!important;align-items:flex-start!important}
+  .chart-title2,.section-title2{width:100%;justify-content:flex-start!important}
+  .btn-print,.print-btn{display:none}
+  thead{display:table-header-group}
+  .table-card{overflow:visible}
+  .table-card tr{break-inside:avoid;page-break-inside:avoid}
+  .table-card table{font-size:6.5pt!important}
+  .table-card th{padding:3px 4px!important;font-size:6.5pt!important}
+  .table-card td{padding:2.5px 4px!important;font-size:6.5pt!important;line-height:1.25!important}
+  td,th{border-left:none;border-right:none}
+  .section{margin-bottom:10px}
+  .chart-card-formal{padding:8px 10px!important}
+  .kpi-row2{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:4px!important}
+  .kpi-box2{padding:6px!important}
+  .kpi-num2{font-size:11pt!important}
+  .kpi-icon2{width:22px!important;height:22px!important;font-size:10px!important}
+
+  /* ===== FIX: Section 2 ===== */
+  .usage-row{display:block!important;gap:0!important;width:100%!important;margin:0!important;padding:0!important;}
+  .usage-block{display:block!important;width:100%!important;margin:0 0 4px 0!important;padding:0!important;page-break-inside:avoid;}
+  .usage-block-divider{padding-top:2px!important;margin-top:0!important;border-top:none!important;page-break-inside:avoid;}
+  .app-donut-row{display:flex;justify-content:center;width:100%;margin:0!important;padding:0!important;}
+
+  .donut-chart{width:95px!important;height:95px!important;min-width:95px!important;min-height:95px!important;margin:0px auto 1px auto!important;}
+  .donut-hole{width:62%!important;height:62%!important;}
+  .donut-hole-pct{font-size:7.5pt!important;}
+  .donut-hole-lbl{font-size:3pt!important;line-height:1!important;}
+
+  .app-mini-list{width:100%!important;max-width:100%!important;margin:0!important;padding:0!important;}
+  .mini-list-heading{font-size:5.5pt!important;margin:0px 0 1px 0!important;page-break-after:avoid;padding:0!important;}
+  .app-mini-row2{display:flex!important;align-items:center!important;gap:1.5px!important;margin-bottom:0px!important;padding:0px!important;font-size:5pt!important;page-break-inside:avoid;}
+  .app-mini-dot{width:3px!important;height:3px!important;flex-shrink:0!important;}
+  .app-mini-name{flex:0 0 35px!important;font-size:5pt!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .app-mini-bar{flex:1 1 auto!important;height:1px!important;}
+  .app-mini-pct{flex:0 0 14px!important;font-size:5pt!important;text-align:right!important;}
+  .app-mini-count{flex:0 0 25px!important;font-size:5pt!important;text-align:right!important;}
+
+  .chart-title2,.section-title2{font-size:6pt!important;font-weight:800!important;color:#14401A!important;margin-bottom:5px!important;padding-bottom:0!important;border-bottom:none!important;}
+  .chart-title2::after,.section-title2::after{display:none!important;}
+  .chart-title2 .section-num,.section-title2 .section-num{width:12px!important;height:12px!important;font-size:5.5pt!important;border-radius:3px!important;margin-right:2px!important;}
+  .chart-title2 .chart-en,.section-title2 .section-en{font-size:5pt!important;}
+  .trend-header-row{flex-wrap:wrap!important;gap:0px!important;page-break-after:avoid;margin-top:0px!important;background:#1B5E20!important;color:#fff!important;padding:1px 3px!important;font-weight:700!important;font-size:5pt!important;border-radius:2px!important;}
+  .trend-subtitle{color:#fff!important;font-size:5pt!important;}
+  .trend-chart-svg svg{width:100%!important;height:auto!important;}
+  .trend-chart-row{gap:0px!important;flex-direction:column;margin:0!important;padding:0!important;}
+  .trend-legend{display:none!important;}
+  .trend-table{font-size:5pt!important;margin-top:0px!important;}
+  .trend-table th,.trend-table td{padding:0.5px 0.3px!important;font-size:5pt!important;}
+  .trend-table th{background:#1B5E20!important;color:#fff!important;}
+  /* ===== END FIX ===== */
+
+  .day-summary-row{margin:2px 0!important}
+  .day-chart-wrap{margin-top:2px!important}
+  .day-chart{height:70px!important;padding:18px 4px 0!important}
+  .day-summary-table{margin-top:4px!important;font-size:6pt!important}
+  .day-summary-table th,.day-summary-table td{padding:2px!important}
+  .day-note{margin-top:1px!important;font-size:5pt!important}
+  .insight-item{padding:4px 6px!important;gap:4px!important;page-break-inside:avoid}
+  .insight-title{font-size:6.5pt!important;font-weight:700!important;line-height:1.25!important}
+  .insight-sub{font-size:6pt!important;line-height:1.25!important;margin-top:1px!important}
+  .gov-header{padding:8px 10px!important}
+  .gov-header-text h1{font-size:10pt!important}
+  .gov-header,.kpi-row2,.day-summary-row,.insight-item,.sign-box,.day-summary-table{break-inside:avoid}
+  .section-title2,.chart-title2{break-after:avoid!important;break-inside:avoid!important}
+  .section-pagebreak{break-before:page!important}
+  @page{
+    margin:0.8cm 0.8cm 1cm 0.8cm;
+    size:A4;
+    @bottom-center{
+      content:"หน้า " counter(page) " จาก " counter(pages);
+      font-size:7pt;
+      color:#888;
+    }
+  }
+}
+
+
+/* ========================================
+   Mobile A4 PDF Viewing Support
+   ======================================== */
+
+@media screen and (max-width: 768px) {
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* กันหัวข้อ/การ์ดถูกจัดกลางโดย align-items:center ของ base "CENTERING ALL SECTIONS"
+     (ต้นเหตุที่หัวข้อบางอันชิดซ้าย บางอันอยู่กลางไม่ตรงกัน) — บังคับชิดซ้ายให้ตรงกันหมด */
+  .hdr,.section,.table-card,.gov-header,.gov-signature,.footer,
+  .chart-card,.chart-card-formal,header,.stats-grid,.insight-list {
+    align-items: flex-start !important;
+  }
+  .chart-title2, .section-title2 {
+    width: 100%;
+    justify-content: flex-start !important;
+  }
+
+  .gov-header-text { min-width: 0; }
+
+  .page {
+    width: 100%;
+    max-width: 100%;
+    padding: 6px 8px !important;
+    margin: 0 auto;
+    background: #fff;
+  }
+
+  /* ===== Header ===== */
+  .gov-header {
+    padding: 6px 8px !important;
+    gap: 8px !important;
+  }
+
+  .gov-header-top {
+    gap: 8px !important;
+  }
+
+  .gov-emblem {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .gov-header-text h1 {
+    font-size: 9pt !important;
+    line-height: 1.2 !important;
+  }
+
+  .gov-org-name {
+    font-size: 7pt !important;
+    line-height: 1.2 !important;
+  }
+
+  .gov-header-divider {
+    margin: 8px 0 !important;
+  }
+
+  .gov-header-meta {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+  }
+
+  .gov-meta-item {
+    flex: none !important;
+    padding: 6px 4px !important;
+    border: 1px solid #e0e0e0 !important;
+    gap: 6px !important;
+  }
+
+  .gov-meta-item:nth-child(1),
+  .gov-meta-item:nth-child(3) {
+    border-right: 1px solid #e0e0e0 !important;
+  }
+
+  .gov-meta-item:nth-child(1),
+  .gov-meta-item:nth-child(2) {
+    border-bottom: 1px solid #e0e0e0 !important;
+  }
+
+  .gov-meta-icon {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 10px !important;
+  }
+
+  .gov-meta-label {
+    font-size: 6pt !important;
+  }
+
+  .gov-meta-text strong {
+    font-size: 7pt !important;
+  }
+
+  /* ===== Sections ===== */
+  .section {
+    margin-bottom: 10px !important;
+  }
+
+  .section-title2, .chart-title2 {
+    font-size: 7pt !important;
+    margin-bottom: 6px !important;
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
+  }
+  .section-title2::after, .chart-title2::after {
+    display: none !important;
+  }
+
+  /* ===== KPI ===== */
+  .kpi-row2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 4px !important;
+  }
+
+  .kpi-box2 {
+    padding: 4px !important;
+    border-top-width: 2px !important;
+  }
+
+  .kpi-num2 {
+    font-size: 10pt !important;
+  }
+
+  .kpi-lbl2 {
+    font-size: 6pt !important;
+  }
+
+  /* ===== Section 2: Usage ===== */
+  .usage-row {
+    display: block !important;
+    gap: 0 !important;
+  }
+
+  .usage-block {
+    margin-bottom: 4px !important;
+  }
+
+  .donut-chart {
+    width: 80px !important;
+    height: 80px !important;
+    min-width: 80px !important;
+    min-height: 80px !important;
+    margin: 2px auto !important;
+  }
+
+  .donut-hole-pct {
+    font-size: 7pt !important;
+  }
+
+  .donut-hole-lbl {
+    font-size: 4pt !important;
+    line-height: 1 !important;
+  }
+
+  .mini-list-heading {
+    font-size: 6pt !important;
+    margin: 2px 0 !important;
+  }
+
+  .app-mini-row2 {
+    gap: 2px !important;
+    margin-bottom: 1px !important;
+    font-size: 5.5pt !important;
+  }
+
+  .app-mini-name {
+    flex: 0 0 35px !important;
+    font-size: 5.5pt !important;
+  }
+
+  .app-mini-pct,
+  .app-mini-count {
+    font-size: 5.5pt !important;
+  }
+
+  /* ===== Trend ===== */
+  .chart-title2 {
+    font-size: 6pt !important;
+  }
+
+  .trend-header-row {
+    font-size: 5pt !important;
+    padding: 1px !important;
+  }
+
+  .trend-chart-svg svg {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .trend-table {
+    display: block !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    font-size: 6.5pt !important;
+    margin-top: 1px !important;
+  }
+  .trend-table thead { display: table-header-group !important; }
+  .trend-table tbody { display: table-row-group !important; }
+  .trend-table tr { display: table-row !important; }
+
+  .trend-table th,
+  .trend-table td {
+    display: table-cell !important;
+    min-width: 46px;
+    padding: 3px 4px !important;
+    font-size: 6.5pt !important;
+  }
+
+  /* ===== Day Chart ===== */
+  .day-summary-row {
+    flex-direction: column !important;
+    gap: 4px !important;
+    margin: 2px 0 !important;
+  }
+
+  .day-total-box,
+  .day-peak-box {
+    font-size: 7pt !important;
+    padding: 4px !important;
+  }
+
+  .day-chart-wrap {
+    gap: 4px !important;
+  }
+
+  .day-chart {
+    gap: 2px !important;
+    padding: 32px 2px 0 !important;
+  }
+
+  .day-col {
+    min-width: 0 !important;
+  }
+
+  .day-count {
+    font-size: 5.5pt !important;
+    overflow: hidden;
+  }
+  .day-col.is-max .day-count {
+    font-size: 6pt !important;
+  }
+
+  .day-name {
+    font-size: 6.5pt !important;
+    margin-top: 4px !important;
+  }
+
+  .peak-badge {
+    font-size: 5.5pt !important;
+    padding: 1px 4px !important;
+  }
+
+  .day-summary-table {
+    font-size: 6pt !important;
+    margin-top: 2px !important;
+    overflow-x: auto !important;
+    display: block !important;
+  }
+
+  .day-summary-table th,
+  .day-summary-table td {
+    padding: 2px !important;
+  }
+
+  .day-name {
+    font-size: 6pt !important;
+  }
+
+  /* ===== Insights ===== */
+  .insight-item {
+    padding: 4px !important;
+    gap: 4px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .insight-title {
+    font-size: 6.5pt !important;
+    font-weight: 700 !important;
+    line-height: 1.25 !important;
+  }
+
+  .insight-sub {
+    font-size: 6pt !important;
+    line-height: 1.25 !important;
+    margin-top: 1px !important;
+  }
+
+  .insight-icon {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  /* ===== Tables ===== */
+  .table-card {
+    overflow-x: auto !important;
+    border-radius: 4px !important;
+  }
+
+  .table-card table {
+    font-size: 5.5pt !important;
+    min-width: 500px !important;
+  }
+
+  .table-card th {
+    padding: 2px !important;
+    font-size: 5.5pt !important;
+  }
+
+  .table-card td {
+    padding: 2px !important;
+  }
+
+  .pill {
+    padding: 1px 4px !important;
+    font-size: 5pt !important;
+  }
+
+  /* ===== Signature ===== */
+  .gov-signature {
+    flex-direction: column !important;
+    gap: 8px !important;
+    margin-top: 10px !important;
+    padding-top: 10px !important;
+  }
+
+  .sign-box {
+    padding: 6px !important;
+    font-size: 6pt !important;
+  }
+
+  .sign-line,
+  .sign-name,
+  .sign-role,
+  .sign-position,
+  .sign-date {
+    font-size: 6pt !important;
+    margin: 2px 0 !important;
+  }
+
+  /* ===== Footer ===== */
+  .footer {
+    font-size: 6pt !important;
+    margin-top: 6px !important;
+    padding-top: 6px !important;
+  }
+
+  /* ===== Print Button ===== */
+  .print-btn {
+    font-size: 8pt !important;
+    padding: 4px 8px !important;
+  }
+}
+
+/* ===== Extra Small Devices (< 480px) ===== */
+@media screen and (max-width: 480px) {
+  .page {
+    padding: 4px 6px !important;
+  }
+
+  .gov-header {
+    padding: 4px 6px !important;
+  }
+
+  .gov-emblem {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .gov-header-text h1 {
+    font-size: 8pt !important;
+  }
+
+  .gov-org-name {
+    font-size: 6pt !important;
+  }
+
+  .gov-header-meta {
+    display: block !important;
+  }
+
+  .gov-meta-item {
+    padding: 4px !important;
+    border: none !important;
+    border-bottom: 1px solid #e0e0e0 !important;
+  }
+
+  .gov-meta-item:last-child {
+    border-bottom: none !important;
+  }
+
+  .section {
+    margin-bottom: 2px !important;
+  }
+
+  .kpi-row2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .donut-chart {
+    width: 70px !important;
+    height: 70px !important;
+    min-width: 70px !important;
+    min-height: 70px !important;
+  }
+
+  .trend-chart-svg svg {
+    height: auto !important;
+  }
+
+  .day-chart {
+    gap: 1px !important;
+    padding: 30px 1px 0 !important;
+  }
+  .day-count { font-size: 5.5pt !important; }
+  .day-name { font-size: 6pt !important; }
+
+  .table-card table {
+    min-width: 400px !important;
+    font-size: 5pt !important;
+  }
+
+  .insight-item {
+    padding: 3px !important;
+  }
+}
+
+/* ============================================================
+   report-summary-insight.css
+   หน้า: /report/summary  ->  บล็อก "3. สรุปภาพรวม" (.insight-list)
+   แนวทาง: สีเน้นสีเดียว (เขียวแบรนด์ #1B5E20) + neutral
+           เน้นการ์ดที่สำคัญที่สุดเพียงใบเดียว
+   ใช้ทั้งมุมมองหน้าจอปกติและตอนปริ้น/เซฟ PDF จึงไม่ห่อด้วย @media print
+   วางไว้ท้ายสุดของ _BASE_STYLE เพื่อให้ชนะกฎ .insight-* ที่ patch ไว้ก่อนหน้าทั้งหมด
+   ============================================================ */
+:root {
+  --rpt-brand:        #1B5E20;  /* เขียวแบรนด์ */
+  --rpt-brand-deep:   #14401A;  /* หัวข้อใบเน้น */
+  --rpt-brand-tint:   #F5F9F5;  /* พื้นใบเน้น */
+  --rpt-brand-line:   #CFE0CF;  /* ขอบใบเน้น */
+  --rpt-icon-bg:      #E9EFE9;  /* พื้นไอคอนใบรอง */
+  --rpt-icon-fg:      #4A7A4F;  /* เส้นไอคอนใบรอง */
+  --rpt-border:       #E6E8E6;  /* ขอบการ์ดทั่วไป */
+  --rpt-text:         #1F2A1F;  /* ตัวหนังสือหลัก */
+  --rpt-text-muted:   #6B726B;  /* คำอธิบาย */
+}
+
+.insight-list {
+  gap: 10px !important;
+}
+
+/* การ์ดทั่วไป: พื้นขาว ขอบเทาบาง ไม่มีเงา ไม่มีแถบสีซ้าย */
+.insight-item {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+  padding: 14px 16px !important;
+  background: #fff !important;
+  border: 1px solid var(--rpt-border) !important;
+  border-left: 1px solid var(--rpt-border) !important;   /* ล้างแถบสีเดิม */
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+/* การ์ดใบแรก = ใบที่เน้น (ใบเดียวเท่านั้น) */
+.insight-item:first-child {
+  padding-left: 14px !important;
+  background: var(--rpt-brand-tint) !important;
+  border-color: var(--rpt-brand-line) !important;
+  border-left: 3px solid var(--rpt-brand) !important;
+}
+
+.insight-icon {
+  flex: 0 0 auto !important;
+  width: 26px !important;
+  height: 26px !important;
+  margin-top: 1px !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: var(--rpt-icon-bg) !important;
+  box-shadow: none !important;
+}
+
+.insight-icon svg {
+  width: 14px !important;
+  height: 14px !important;
+  stroke: var(--rpt-icon-fg) !important;   /* ทับ stroke="#fff" ที่ติดมากับ SVG */
+}
+
+.insight-item:first-child .insight-icon     { background: var(--rpt-brand) !important; }
+.insight-item:first-child .insight-icon svg { stroke: #fff !important; }
+
+.insight-title {
+  color: var(--rpt-text) !important;
+  font-weight: 700 !important;
+  line-height: 1.5 !important;
+}
+
+.insight-item:first-child .insight-title {
+  color: var(--rpt-brand-deep) !important;
+}
+
+.insight-sub {
+  margin-top: 2px !important;
+  color: var(--rpt-text-muted) !important;
+  line-height: 1.62 !important;
+}
 """
 #-----------------
 # GET /report/summary - รายงานสรุป KPI
@@ -864,7 +1385,7 @@ def report_summary(
         q = q.filter(ConferenceEvent.date >= week_start).filter(ConferenceEvent.date <= week_end)
         scope = f"สัปดาห์ {format_date_th(week_start, short=True)} - {format_date_th(week_end, short=True)}"
     else:
-        q = q.filter(extract("year", ConferenceEvent.date) == year - 543)
+        q = q.filter(extract("year", ConferenceEvent.date) == year)
         if month:
             q = q.filter(extract("month", ConferenceEvent.date) == month)
         scope = f"เดือน{MONTHS_TH.get(month,'')} พ.ศ. {year}" if month else f"ปี พ.ศ. {year}"
@@ -901,7 +1422,6 @@ def report_summary(
         a = normalize_app_name(e.app)
         app_map[a] = app_map.get(a, 0) + 1
     app_entries = sorted(app_map.items(), key=lambda x: -x[1])[:5]
-    app_max = app_entries[0][1] if app_entries else 1
 
     #Dept breakdown
     dept_map = {}
@@ -909,7 +1429,6 @@ def report_summary(
         d = (e.department or "ไม่ระบุ").strip() or "ไม่ระบุ"
         dept_map[d] = dept_map.get(d, 0) + 1
     dept_entries = sorted(dept_map.items(), key=lambda x: -x[1])[:8]
-    dept_max = dept_entries[0][1] if dept_entries else 1
     ready_status = "อยู่ในเกณฑ์ดี" if ready_pct >= 80 else "ควรติดตาม"
     #Day of week 
     day_count = [0]*7
@@ -962,8 +1481,7 @@ def report_summary(
             segments.append(f"#E0E0E0 {current_deg}deg 360deg")
         return f"conic-gradient({','.join(segments)})"
 
-    donut_gradient = _build_donut_gradient(app_entries, total)        
-    other_apps = app_entries[1:]
+    donut_gradient = _build_donut_gradient(app_entries, total)
     def _app_row(name, cnt):
         letter, color = _app_icon(name)
         return f"""
@@ -991,13 +1509,6 @@ def report_summary(
         for idx, (name, cnt) in enumerate(app_entries)
     )
 
-    dept_bars = "".join(f"""
-    <div class="bar-row">
-      <div class="bar-label">{esc(name)}</div>
-      <div class="bar-wrap"><div class="bar-fill" style="width:{round(cnt/dept_max*100)}%"></div></div>
-      <div class="bar-count">{cnt}</div>
-    </div>""" for name, cnt in dept_entries)  
-    
     def _day_bar_color(cnt: int, max_cnt: int) -> str:
         """สีแท่งทึบแบบทางการ - 0=เทาอ่อน สูงสุด=เขียวเข้ม อื่นๆ=เขียวกลาง"""
         if max_cnt == 0 or cnt == 0:
@@ -1021,9 +1532,8 @@ def report_summary(
 
 
     now = datetime.now()
-    prepared_date = f"{now.day} {MONTHS_TH[now.month]} {now.year + 543}"
+    prepared_date = f"{now.day} {MONTHS_TH[now.month]} {ce_to_be_year(now.year)}"
     prepared_time = f"{now.strftime('%H.%M')} น."
-    prepared_at = f"{prepared_date} เวลา {prepared_time}"
 
     # ===== ข้อมูลย้อนหลัง 6 เดือน สำหรับกราฟเส้น =====
     THAI_MONTH_SHORT = {
@@ -1032,7 +1542,7 @@ def report_summary(
     }
 
     # หาปี/เดือนอ้างอิง (ใช้เดือนที่เลือกดูอยู่ หรือเดือนปัจจุบันถ้าดูทั้งปี)
-    ref_year = year - 543
+    ref_year = year
     ref_month = month if month else datetime.now().month
 
     months_range = []
@@ -1070,7 +1580,7 @@ def report_summary(
         events_by_month.setdefault(prefix, []).append(e)
 
     for (yy, mm) in months_range:
-        month_labels.append(f"{THAI_MONTH_SHORT[mm]} {str(yy+543)[-2:]}")
+        month_labels.append(f"{THAI_MONTH_SHORT[mm]} {str(yy)[-2:]}")
         month_events = events_by_month.get(f"{yy:04d}-{mm:02d}", [])
         month_app_count = {}
         for e in month_events:
@@ -1271,8 +1781,7 @@ def report_summary(
 
           <div class="usage-block usage-block-divider">
             <div class="trend-header-row">
-              <div class="chart-title2" style="margin-bottom:0">การใช้งานแพลตฟอร์มย้อนหลัง 6 เดือน</div>
-              <div class="trend-unit">หน่วย: ครั้ง</div>
+              <div class="trend-subtitle">การใช้งานแพลตฟอร์มย้อนหลัง 6 เดือน</div>
             </div>
             <div class="trend-chart-row">
               <div class="trend-chart-svg">{svg_chart}</div>
@@ -1392,7 +1901,7 @@ def report_summary(
         <div class="day-note">หมายเหตุ: คำนวณจากจำนวนการประชุมทั้งหมด</div>
       </div>
     </div>
-    <div class="section section-pagebreak">
+    <div class="section">
       <div class="section-title2">
         <span class="section-icon"></span>
         <span class="section-num">5.</span> รายการประชุม ({total} รายการ) <span class="section-en">Meeting List</span>
@@ -1462,11 +1971,11 @@ def report_print(
         q = q.filter(ConferenceEvent.date >= week_start).filter(ConferenceEvent.date <= week_end)
         scope = f"สัปดาห์ {format_date_th(week_start, short=True)} - {format_date_th(week_end, short=True)}"
     elif month:
-        q = q.filter(extract("year", ConferenceEvent.date) == year - 543)
+        q = q.filter(extract("year", ConferenceEvent.date) == year)
         q = q.filter(extract("month", ConferenceEvent.date) == month)
         scope = f"เดือน{MONTHS_TH.get(month,'')} พ.ศ. {year}"
     else:
-        q = q.filter(extract("year", ConferenceEvent.date) == year - 543)
+        q = q.filter(extract("year", ConferenceEvent.date) == year)
         scope = f"ปี พ.ศ. {year}"
 
     events = q.order_by(ConferenceEvent.date).all()
@@ -1486,9 +1995,7 @@ def report_print(
         </tr>""" for e in events)
     
     now = datetime.now()
-    prepared_date = f"{now.day} {MONTHS_TH[now.month]} {now.year + 543}"
-    prepared_time = f"{now.strftime('%H.%M')} น."
-    prepared_at = f"{prepared_date} เวลา {prepared_time}"
+    prepared_date = f"{now.day} {MONTHS_TH[now.month]} {ce_to_be_year(now.year)}"
     prepared_time = now.strftime('%H:%M')
 
     html = f"""<!DOCTYPE html>

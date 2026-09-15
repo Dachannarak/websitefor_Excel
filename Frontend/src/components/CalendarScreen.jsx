@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import Icon from "../Icon";
 import { MONTHS_TH, DAYS_SHORT, toDateStr, getDayCls, formatDateTH, dayOfWeekTH } from "../utils/date";
+import { ceToBeYear, beToCeYear } from "../utils/dateUtils";
 import { getEventTypeCls, getCategoryCls, getAppCls } from "../utils/eventStyle";
 import { showToast } from "../utils/toast";
-import { DayTimeline, MoreEventsBadge } from "./DayTimeline";
+import { MoreEventsBadge } from "./DayTimeline";
 import AgendaListView from "./AgendaListView";
+import { ThaiDatePicker } from "../ThaiDatePicker";
 
 const APP_OPTIONS = [
   {val:"app-zoom",  label:"Zoom"},
@@ -18,17 +20,24 @@ const APP_OPTIONS = [
 export default function CalendarScreen({ events, focusDate, onFocusDateApplied, onSelectEvent, onEventDateChange, onEventDeleted, viewMode, onViewModeChange }) {
   const today = new Date();
   const setViewMode = onViewModeChange; // "agenda" | "grid" — state อยู่ที่ App.jsx เพื่อให้กด "กลับ" จากหน้ารายละเอียดแล้วยังอยู่มุมมองเดิม ไม่รีเซ็ตกลับ "รายการ"
-  const [year,   setYear]  = useState(today.getFullYear());
+  // year state เก็บเป็น พ.ศ. เสมอ ให้ตรงกับ event.date และ focusDate ที่เป็น พ.ศ. — ต้องแปลงเป็น ค.ศ. ก่อนทำ Date math เท่านั้น
+  const [year,   setYear]  = useState(ceToBeYear(today.getFullYear()));
   const [month,  setMonth] = useState(today.getMonth()+1);
   const todayStr = toDateStr(today);
-  const firstday = new Date(year,month-1,1).getDay();
-  const daysInMonth = new Date(year,month,0).getDate();
+  const firstday = new Date(beToCeYear(year),month-1,1).getDay();
+  const daysInMonth = new Date(beToCeYear(year),month,0).getDate();
   const [selectedDate, setSelectedDate] = useState(todayStr);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [showYearGrid, setShowYearGrid] = useState(false);
-  const [yearGridStart, setYearGridStart] = useState(() => today.getFullYear() - 5);
+  const [yearGridStart, setYearGridStart] = useState(() => ceToBeYear(today.getFullYear()) - 5);
   const [justAddedDate, setJustAddedDate] = useState(null);
   const [openMoreDate, setOpenMoreDate] = useState(null); // วันที่ที่กำลังเปิด popup "+N" อยู่ — เปิดได้ทีละอันเท่านั้น กดอันใหม่แล้วอันเก่าปิดอัตโนมัติ
+  const [showAllDayEvs, setShowAllDayEvs] = useState(false);
+  const [showAllDayEvsDate, setShowAllDayEvsDate] = useState(selectedDate);
+  if (selectedDate !== showAllDayEvsDate) {
+    setShowAllDayEvsDate(selectedDate);
+    setShowAllDayEvs(false);
+  }
 
   // เปิดหน้าปฏิทินตรงเดือน/วันของรายการที่เพิ่งสร้างเสร็จ แทนที่จะรีเซ็ตกลับไปเดือนปัจจุบันเสมอ
   // สลับไปมุมมองปฏิทิน (grid) เพื่อให้เห็นตัวเลข +N ที่อัปเดต และไฮไลต์ช่องนั้นชั่วครู่ให้สังเกตง่าย
@@ -165,11 +174,11 @@ export default function CalendarScreen({ events, focusDate, onFocusDateApplied, 
 
 
 return (
-  <div className="screen">
+  <div className="screen screen-calendar">
     <div className="cal-header-bar">
             <div className="cal-header-left">
               <div className="cal-header-title">
-                {MONTHS_TH[month]} {year+543}
+                {MONTHS_TH[month]} {year}
               </div>
               <div className="cal-header-sub">วันนี้ {formatDateTH(todayStr)}</div>
             </div>
@@ -191,7 +200,7 @@ return (
                 {hasFilter && <span className="filter-dot"/>}
                 </button>
               <button className="cal-nav-btn" onClick={prev} aria-label="เดือนก่อนหน้า">‹</button>
-              <button className="cal-nav-btn cal-nav-today" onClick={()=>{setYear(today.getFullYear());setMonth(today.getMonth()+1);setSelectedDate(todayStr);}}>วันนี้</button>
+              <button className="cal-nav-btn cal-nav-today" onClick={()=>{setYear(ceToBeYear(today.getFullYear()));setMonth(today.getMonth()+1);setSelectedDate(todayStr);}}>วันนี้</button>
               <button className="cal-nav-btn" onClick={next} aria-label="เดือนถัดไป">›</button>
             </div>
           </div>
@@ -250,11 +259,17 @@ return (
               <div className="filter-row">
                 <div className="filter-label">ช่วงวันที่</div>
                 <div className="filter-date-row">
-                  <input type="date" className="filter-date"
-                    value={dateFrom} onChange={e=>setDateFrom(e.target.value)}/>
+                  <ThaiDatePicker
+                    value={dateFrom}
+                    onChange={setDateFrom}
+                    placeholder="วันที่เริ่ม"
+                  />
                   <span className="filter-date-sep">-</span>
-                  <input type="date" className="filter-date"
-                    value={dateTo} onChange={e=>setDateTo(e.target.value)}/>
+                  <ThaiDatePicker
+                    value={dateTo}
+                    onChange={setDateTo}
+                    placeholder="วันที่สิ้นสุด"
+                  />
                 </div>
               </div>
 
@@ -282,12 +297,13 @@ return (
         const isSel=ds===normDate(selectedDate);
         const isDragOver = drag && drag.moved && hoverDate===ds && ds!==drag.ev.date;
         const isJustAdded = ds===normDate(justAddedDate);
+        // โชว์ของ Excel ก่อนเสมอ (กันไม่ให้รายการพิมพ์เพิ่มเองแทรกจนของ Excel ถูกดันไปซ่อน)
+        // ที่เหลือไม่ว่าจะมาจาก Excel หรือพิมพ์เพิ่มเอง รวมเป็น badge "+N" อันเดียวท้ายรายการ ไม่แยกเป็นหลาย badge
         const excelEvs = evs.filter(e=>e.source==="excel");
         const manualEvs = evs.filter(e=>e.source!=="excel");
-        // มีทั้งจากเอ็กเซลและพิมพ์เพิ่มเอง: โชว์ของเอ็กเซลฝั่งซ้าย + รวมของที่พิมพ์เพิ่มเป็น badge ฝั่งขวา
-        // ถ้ามีแหล่งเดียว โชว์เป็นรายการปกติเหมือนเดิม (ไม่ต้องแยกฝั่ง)
-        const hasSplit = excelEvs.length>0 && manualEvs.length>0;
-        const leftEvs = hasSplit ? excelEvs : evs;
+        const orderedEvs = [...excelEvs, ...manualEvs];
+        const shownEvs = orderedEvs.slice(0,2);
+        const hiddenEvs = orderedEvs.slice(2);
         const renderEvRow = (ev) => (
           <div key={ev.id}
             className={`cal-ev-item cal-ev-${(getEventTypeCls(ev) || getCategoryCls(ev)).replace("cat-","")} ${drag?.ev?.id===ev.id?"ev-dragging":""} ${updatingId===ev.id?"cal-ev-updating":""}`}
@@ -308,19 +324,12 @@ return (
           className={`cal-cell-a ${isSel?"cal-cell-sel":""} ${isToday?"cal-cell-today":""} ${isDragOver?"cal-cell-dragover":""} ${isJustAdded?"cal-cell-just-added":""}`}
           onClick={()=>setSelectedDate(ds)}>
           <div className={`cal-d-a ${getDayCls(ds)} ${isToday?"cal-today-ring":""}`}>{d}</div>
-          <div className={`cal-ev-list ${hasSplit?"cal-ev-list-split":""}`}>
-            <div className="cal-ev-list-left">
-              {leftEvs.slice(0,2).map(renderEvRow)}
-              {leftEvs.length>2 && (
-                <MoreEventsBadge events={leftEvs.slice(2)} count={leftEvs.length-2} onSelectEvent={onSelectEvent} pulse={isJustAdded}
-                  open={openMoreDate===ds}
-                  onToggle={()=>setOpenMoreDate(d=>d===ds?null:ds)}/>
-              )}
-            </div>
-            {hasSplit && (
-              <div className="cal-ev-manual-badge" onClick={e=>{e.stopPropagation(); onSelectEvent(manualEvs[0]);}}>
-                +{manualEvs.length}
-              </div>
+          <div className="cal-ev-list">
+            {shownEvs.map(renderEvRow)}
+            {hiddenEvs.length>0 && (
+              <MoreEventsBadge events={hiddenEvs} count={hiddenEvs.length} onSelectEvent={onSelectEvent} pulse={isJustAdded}
+                open={openMoreDate===ds}
+                onToggle={()=>setOpenMoreDate(d=>d===ds?null:ds)}/>
             )}
           </div>
         </div>
@@ -337,22 +346,35 @@ return (
            onEventDeleted ={onEventDeleted}
         />
        )}
-       {viewMode === "grid" && selectedDate && (
-        <>
-        <div className="cal-day-panel-backdrop" onClick={()=>setSelectedDate("")}/>
-        <div className="cal-day-panel">
-          <div className="cal-day-label">
-            <span className={`cal-day-dow ${getDayCls(selectedDate)}`}>{dayOfWeekTH(selectedDate)}</span>
-            <span className="cal-day-fulldate">{formatDateTH(selectedDate)}</span>
-            <span className="section-count">{selectedEvs.length} รายการ</span>
-            <button className="cal-day-panel-close" onClick={()=>setSelectedDate("")} aria-label="ปิด"><Icon name="x" size={15}/></button>
-          </div>
-          <DayTimeline
-          events={selectedEvs}
-          onSelectEvent={onSelectEvent}
-         />
-       </div>
-       </>
+       {viewMode == "grid" && selectedDate && (
+         <>
+           <div className="cal-day-panel-backdrop" onClick={()=>setSelectedDate("")}/>
+           <div className="cal-day-panel cal-day-panel-compact">
+             <div className="cal-day-label-compact">
+               <div className="cal-day-info">
+                 <div className="cal-day-dow-compact">{dayOfWeekTH(selectedDate)}</div>
+                 <div className="cal-day-fulldate-compact">{formatDateTH(selectedDate)}</div>
+                 <div className="cal-day-count-compact">{selectedEvs.length} รายการ</div>
+               </div>
+               <button className="cal-day-panel-close-compact" onClick={()=>setSelectedDate("")} aria-label="ปิด">
+                 <Icon name="x" size={14}/>
+               </button>
+             </div>
+             <div className="cal-day-events-compact">
+               {selectedEvs.slice(0, showAllDayEvs ? selectedEvs.length : 3).map(ev => (
+                 <div key={ev.id} className="cal-day-ev-compact" onClick={() => onSelectEvent(ev)}>
+                   <span className="cal-day-ev-time">{(ev.time_raw?.match(/\d{1,2}[.:]\d{2}/) || [""])[0]}</span>
+                   <span className="cal-day-ev-title">{ev.title?.substring(0, 20)}</span>
+                 </div>
+               ))}
+               {!showAllDayEvs && selectedEvs.length > 3 && (
+                 <button className="cal-day-ev-more" onClick={() => setShowAllDayEvs(true)}>
+                   ดูเพิ่มเติม ({selectedEvs.length - 3})
+                 </button>
+               )}
+             </div>
+           </div>
+         </>
        )}
 
 {drag && (
@@ -383,7 +405,7 @@ return (
             setYearGridStart(year - 5);
             setShowYearGrid(g=>!g);
           }}>
-          {showYearGrid ? `${yearGridStart+543} - ${yearGridStart+11+543}` : `${year+543}`}
+          {showYearGrid ? `${yearGridStart} - ${yearGridStart+11}` : `${year}`}
         </button>
         <button
           className="cal-nav-btn"
@@ -401,7 +423,7 @@ return (
                   setYear(y);
                   setShowYearGrid(false);
                 }}>
-                {y+543}
+                {y}
               </button>
             );
           })}

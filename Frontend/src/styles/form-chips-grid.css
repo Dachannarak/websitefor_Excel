@@ -1,0 +1,136 @@
+/* =============================================================
+   form-chips-grid.css
+   CSS สำหรับ Chips Grid — ปุ่มเลือก (App, Event Type, Status...)
+   ============================================================= */
+   /* Dark Mode */
+   [data-theme="dark"] {
+    --form-chip-bg: #242836;
+    --form-chip-border: rgba(255, 255, 255, .09);
+    --form-chip-text: #EDEDEF;
+    --form-chip-text-sub: #97979F;
+   }
+
+   :root {
+    --form-chip-bg: #F7F5F1;
+    --form-chip-border: #E9E7E3;
+    --form-chip-text: #37352F;
+    --form-chip-text-sub: #6B6862;
+   }
+
+   /* Chips Grid */
+   .form-chips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 10px;
+    margin-top: 8px;
+   }
+
+   /* ช่องพิมพ์เอง ต่อท้าย chips (app, event_type ฯลฯ ที่ allowCustom) */
+   .form-chips-custom {
+    margin-top: 8px;
+   }
+
+   @media (max-width: 600px) {
+    .form-chips-grid {
+        grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+        gap: 8px;
+    }
+   }
+
+   /* Chip Button */
+   .form-chip {
+    padding: 12px 14px;
+    background: var(--form-chip-bg);
+    border: 2px solid var(--form-chip-border);
+    border-radius: 12px;
+    color: var(--form-chip-text-sub);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 44px;
+   }
+
+   [data-theme="dark"] .form-chip {
+    background: var(--form-chip-bg);
+    border-color: var(--form-chip-border);
+    color: var(--form-chip-text-sub);
+   }
+
+   /* Hover state */
+    .form-chip:hover:not(:disabled) {
+      background: var(--form-chip-border);
+      border-color: #D9D5CD;
+      color: var(--form-chip-text);
+    }
+
+    [data-theme="dark"] .form-chip:hover:not(:disabled) {
+        background: rgba(255, 255, 255, .12);
+        border-color: rgba(255, 255, 255, .15);
+        color: #EDEDEF;
+    }
+
+    /* Active state */
+    .form-chip.form-chip-active {
+        background: #1F8A5C;
+        border-color: #1F8A5C;
+        color: #fff;
+        font-weight: 700;
+        box-shadow: 0 4px 12px rgba(31, 138, 92, .25);
+    }
+
+    [data-theme="dark"] .form-chip.form-chip-active {
+        background: #0D7B50;
+        border-color: #0D7B50;
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(31, 138, 92, .35);
+    }
+
+    /* Disabled state */
+    .form-chip:disabled {
+        opacity: .5;
+        cursor: not-allowed;
+    }
+
+    /* Focus state(keyboard) */
+    .form-chip:focus {
+        outline: 2px solid #1F8A5C;
+        outline-offset: 2px;
+    }
+
+    [data-theme="dark"] .form-chip:focus {
+        outline-color: #6EE7B7;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+        .form-chips-grid {
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 6px;
+        }
+
+        .form-chip {
+            paddign: 10px 12px;
+            font-size: 12px;
+            min-height: 40px;
+        }
+
+        /* Alternative: full width chips */
+        .form-chips-grid.form-chips-full {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        @media (max-width: 480px) {
+            .form-chips-grid.form-chips-full {
+                grid-template-columns: 1fr;
+            }
+        }
+    }

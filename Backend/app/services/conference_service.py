@@ -24,6 +24,19 @@ EXCLUDED_SHEETS = {
 
 JUNK_TITLES = {"เรื่อง", "title", "-", "nan", "none", ""}
 
+# ผลต่างปี พ.ศ./ค.ศ. — ใช้ helper คู่นี้แทนการบวก/ลบ 543 ตรงๆ กระจายทั้งไฟล์
+BE_OFFSET = 543
+
+
+def ce_to_be_year(year: int) -> int:
+    """ปี ค.ศ. → พ.ศ."""
+    return year + BE_OFFSET
+
+
+def be_to_ce_year(year: int) -> int:
+    """ปี พ.ศ. → ค.ศ."""
+    return year - BE_OFFSET
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -40,18 +53,20 @@ def safe_str(val) -> str:
 
 
 def _to_iso(year: int, month: int, day: int) -> str:
-    """คืน YYYY-MM-DD ถ้าวันที่มีอยู่จริงในปฏิทินและปีอยู่ในช่วงที่สมเหตุสมผล — คืน '' ถ้าไม่มี (เช่น 31 เมษายน หรือปี 799)"""
-    if not (1900 <= year <= 2200):
+    """คืน YYYY-MM-DD (พ.ศ.) ถ้าวันที่มีอยู่จริงในปฏิทินและปีอยู่ในช่วงที่สมเหตุสมผล — คืน '' ถ้าไม่มี (เช่น 31 เมษายน หรือปี 799)"""
+    if not (2443 <= year <= 2743):  # เทียบเท่าช่วง ค.ศ. 1900-2200
         return ""
     try:
-        return date(year, month, day).isoformat()
+        # date() ต้องใช้ปี ค.ศ. จริงเพื่อตรวจว่าวันที่มีอยู่จริง (อธิกสุรทิน ฯลฯ) — ปีที่คืนค่ายังเป็น พ.ศ. ตามเดิม
+        date(be_to_ce_year(year), month, day)
+        return f"{year:04d}-{month:02d}-{day:02d}"
     except ValueError:
         return ""
 
 
 def parse_date(val) -> str:
     """
-    แปลงวันที่หลากหลาย format ให้เป็น YYYY-MM-DD (คริสต์ศักราช)
+    แปลงวันที่หลากหลาย format ให้เป็น YYYY-MM-DD (พุทธศักราช — ตรงกับที่เก็บในฐานข้อมูล)
     รองรับ:
       - pandas Timestamp / datetime
       - "1 ตุลาคม 2568"  (พ.ศ.)
@@ -65,8 +80,8 @@ def parse_date(val) -> str:
     # pandas Timestamp หรือ datetime
     if hasattr(val, "strftime"):
         year = val.year
-        if year > 2400:
-            year -= 543
+        if year < 2400:
+            year = ce_to_be_year(year)
         return _to_iso(year, val.month, val.day)
 
     raw = str(val).strip()
@@ -80,8 +95,8 @@ def parse_date(val) -> str:
                 try:
                     day = int(tokens[month_idx - 1])
                     year = int(tokens[month_idx + 1])
-                    if year > 2400:
-                        year -= 543
+                    if year < 2400:
+                        year = ce_to_be_year(year)
                     return _to_iso(year, month_num, day)
                 except ValueError:
                     pass
@@ -92,8 +107,8 @@ def parse_date(val) -> str:
         if len(parts) == 3:
             try:
                 day, month, year = int(parts[0]), int(parts[1]), int(parts[2])
-                if year > 2400:
-                    year -= 543
+                if year < 2400:
+                    year = ce_to_be_year(year)
                 return _to_iso(year, month, day)
             except ValueError:
                 pass
@@ -102,8 +117,8 @@ def parse_date(val) -> str:
     try:
         parsed = pd.to_datetime(raw, errors="raise")
         year = parsed.year
-        if year > 2400:
-            year -= 543
+        if year < 2400:
+            year = ce_to_be_year(year)
         return _to_iso(year, parsed.month, parsed.day)
     except Exception:
         pass

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import "./App.css";
-import { API, ADMIN_HEADERS } from "./api/events";
+import { API, ADMIN_HEADERS, softDeleteAllEvents } from "./api/events";
 import { formatDateTH } from "./utils/date";
 import { showToast } from "./utils/toast";
 import ToastHost from "./components/ToastHost";
@@ -10,6 +10,7 @@ import CalendarScreen from "./components/CalendarScreen";
 import SearchScreen from "./components/SearchScreen";
 import DetailScreen from "./components/DetailScreen";
 import ReportScreen from "./components/ReportScreen";
+import TrashScreen from "./components/TrashScreen";
 import UploadSheet from "./components/UploadSheet";
 import FABSpeedDial from "./components/FABSpeedDial";
 import TabBar from "./components/TabBar";
@@ -27,6 +28,7 @@ function AppRoot() {
   const [detail,       setDetail]       = useState(null);
   const [editEvent,    setEditEvent]    = useState(null);
   const [showUpload,   setShowUpload]   = useState(false);
+  const [showTrash,    setShowTrash]    = useState(false);
   const [uploadStats,  setUploadStats]  = useState(null);
   const [darkMode,     setDarkMode]     = useState(false);
   const [calFocusDate, setCalFocusDate] = useState(null);
@@ -44,8 +46,18 @@ function AppRoot() {
   const fetchEvents = useCallback(()=>{
     const reqId = ++eventsReqId.current;
     return fetch(`${API}/events/`)
-      .then(r=>{ if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-      .then(d=>{ if (reqId !== eventsReqId.current) return; setEvents(Array.isArray(d) ? d : []); setLoadError(false); setLoading(false); })
+      .then(r=>{
+        if(!r.ok) throw new Error(`HTTP ${r.status}`);
+        const truncated = r.headers.get("X-Results-Truncated") === "true";
+        return r.json().then(d => ({ d, truncated }));
+      })
+      .then(({d, truncated})=>{
+        if (reqId !== eventsReqId.current) return;
+        setEvents(Array.isArray(d) ? d : []);
+        setLoadError(false);
+        setLoading(false);
+        if (truncated) showToast("ข้อมูลมีมากเกินไป แสดงผลได้ไม่ครบทุกรายการ", "error");
+      })
       .catch(()=>{ if (reqId !== eventsReqId.current) return; setLoadError(true); setLoading(false); });
   },[]);
 
@@ -89,6 +101,7 @@ function AppRoot() {
     <div className="app">
       <EventForm
         event={editEvent === "new" ? null : editEvent}
+        events={events}
         onBack={()=>{ setEditEvent(null); }}
         onSaved={(saved)=>{
           const wasNew = editEvent === "new";
@@ -103,6 +116,17 @@ function AppRoot() {
             setDetail(saved);
           }
         }}
+      />
+      {toastHost}
+    </div>
+  );
+
+  // แสดงถังขยะ
+  if (showTrash) return (
+    <div className="app">
+      <TrashScreen
+        onBack={()=>setShowTrash(false)}
+        onRestore={fetchEvents}
       />
       {toastHost}
     </div>
@@ -164,7 +188,23 @@ function AppRoot() {
           />
         )}
         {tab==="search" && <SearchScreen events={events} onSelectEvent={setDetail}/>}
-        {tab==="report" && <ReportScreen events={events} darkMode={darkMode} onDataChanged={fetchEvents}/>}
+        {tab==="report" && (
+          <ReportScreen
+            events={events}
+            darkMode={darkMode}
+            onDataChanged={fetchEvents}
+            onShowTrash={()=>setShowTrash(true)}
+            onDeleteAll={async ()=>{
+              try {
+                await softDeleteAllEvents();
+                await fetchEvents();
+                showToast("ลบรายการทั้งหมดแล้ว (กู้คืนได้ในถังขยะ)", "error");
+              } catch (e) {
+                showToast(e.message, "error");
+              }
+            }}
+          />
+        )}
       </div>
 
       {/* Theme toggle */}

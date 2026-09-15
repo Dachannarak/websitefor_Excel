@@ -120,7 +120,7 @@ def export_excel(
     if week_start and week_end:
         q = q.filter(ConferenceEvent.date >= week_start).filter(ConferenceEvent.date <= week_end)
     elif year:
-        q = q.filter(extract("year", ConferenceEvent.date) == year - 543)
+        q = q.filter(extract("year", ConferenceEvent.date) == year)
         if month:
             q = q.filter(extract("month", ConferenceEvent.date) == month)
 
@@ -197,6 +197,17 @@ def soft_delete_all(confirm: str = Query(...), db: Session = Depends(get_db)):
     )
     db.commit()
     return {"success": True, "message": f"ลบข้อมูลทั้งหมด {count} รายการแล้ว (กู้คืนได้ในถังขยะ)", "count": count}
+
+
+@router.post("/all/restore-all")
+def restore_all(db: Session = Depends(get_db)):
+    count = (
+        db.query(ConferenceEvent)
+        .filter(ConferenceEvent.deleted_at.isnot(None))
+        .update({ConferenceEvent.deleted_at: None})
+    )
+    db.commit()
+    return {"success": True, "message": f"กู้คืนข้อมูลทั้งหมด {count} รายการแล้ว", "count": count}
 
 
 @router.get("/trash/list", response_model=list[ConferenceEventOut])

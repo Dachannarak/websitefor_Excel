@@ -28,7 +28,7 @@ class ConferenceEventOut(BaseModel):
     model_config = {"from_attributes": True}
 
     @field_validator(
-        "time_raw", "location", "app", "coordinator", "department",
+        "date", "time_raw", "location", "app", "coordinator", "department",
         "book_no", "status", "assignee", "zoom_user", "details", "month_source",
         "source", "image_url", "meeting_link", "event_type",
         mode="before",

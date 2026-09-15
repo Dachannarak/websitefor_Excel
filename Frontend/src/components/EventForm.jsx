@@ -4,12 +4,15 @@ import { API, ADMIN_HEADERS, deleteEventById } from "../api/events";
 import { MONTHS_TH } from "../utils/date";
 import { showToast } from "../utils/toast";
 import ConfirmSheet from "./ConfirmSheet";
+import { ThaiDatePicker } from "../ThaiDatePicker";
+import { TimePickerScroll } from "./TimePickerScroll";
 
 // ---------------------------------------------------------------------------
 // EventForm — เพิ่ม/แก้ไขรายการ
 // ---------------------------------------------------------------------------
-export default function EventForm({ event, onBack, onSaved }) {
+export default function EventForm({ event, events, onBack, onSaved }) {
   const isNew = !event?.id;
+  const deptList = [...new Set((events||[]).map(e=>e.department).filter(Boolean))].sort();
 
   // รองรับปุ่ม back ของ browser
   const onBackRef = useRef(onBack);
@@ -33,23 +36,7 @@ export default function EventForm({ event, onBack, onSaved }) {
   const [fieldErr,    setFieldErr]    = useState({});
   const [success,     setSuccess]     = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(event?.image_url || null);
-  const imageInputRef = useRef(null);
 
-  const imagePreviewRef = useRef(imagePreview);
-  useEffect(() => { imagePreviewRef.current = imagePreview; }, [imagePreview]);
-  useEffect(() => () => {
-    if (imagePreviewRef.current?.startsWith("blob:")) URL.revokeObjectURL(imagePreviewRef.current);
-  }, []);
-
-  function  handleImageChange(e) {
-    const f = e.target.files[0]; e.target.value="";
-    if (!f) return;
-    if (imagePreviewRef.current?.startsWith("blob:")) URL.revokeObjectURL(imagePreviewRef.current);
-    setImageFile(f);
-    setImagePreview(URL.createObjectURL(f));
-  }
   function set(key, val) {
     setForm(f=>({...f,[key]:val}));
     if (fieldErr[key]) setFieldErr(fe=>{ const n={...fe}; delete n[key]; return n; });
@@ -67,23 +54,11 @@ export default function EventForm({ event, onBack, onSaved }) {
     setFieldErr({});
     setSaving(true); setErr(null);
     try {
-      let imageUrl = form.image_url || null;
-      if (imageFile) {
-        const imgForm = new FormData();
-        imgForm.append("file", imageFile);
-        const imgRes = await fetch(`${API}/api/v1/upload-image`, { method:"POST", body:imgForm });
-        if (!imgRes.ok) {
-          let detail = "อัปโหลดรูปภาพไม่สำเร็จ";
-          try { detail = (await imgRes.json()).detail || detail; } catch { /* response body wasn't JSON, keep default detail */ }
-          throw new Error(detail);
-        }
-        const d = await imgRes.json(); imageUrl = d.url;
-      }
       const url = isNew ? `${API}/events/` : `${API}/events/${event.id}`;
       const res = await fetch(url, {
         method: isNew ? "POST" : "PUT",
         headers: {"Content-Type":"application/json", ...ADMIN_HEADERS},
-        body: JSON.stringify({ ...form, image_url: imageUrl }),
+        body: JSON.stringify(form),
       });
       if (!res.ok) {
         let detail = "บันทึกไม่สำเร็จ";
@@ -112,6 +87,60 @@ export default function EventForm({ event, onBack, onSaved }) {
   function renderField(f) {
     const invalid = !!fieldErr[f.key];
     const inputCls = `form-input${invalid ? " form-input-invalid" : ""}`;
+    
+    if (f.type === "date") {
+      return (
+        <div className="form-field" key={f.key}>
+          <ThaiDatePicker
+            label={`${f.label}${f.required ? " *" : ""} (พ.ศ.)`}
+            value={form[f.key] || ""}
+            onChange={(date) => set(f.key, date)}
+          />
+          {invalid && <div className="form-field-err">กรุณากรอกข้อมูลนี้</div>}
+        </div>
+      );
+    }
+    
+    if (f.type === "time") {
+      return (
+        <div className="form-field" key={f.key}>
+          <TimePickerScroll
+            label={f.label}
+            value={form[f.key] || ""}
+            onChange={(time) => set(f.key, time)}
+          />
+          {invalid && <div className="form-field-err">กรุณากรอกข้อมูลนี้</div>}
+        </div>
+      );
+    }
+    
+    if (f.type === "chips") {
+      return (
+        <div className="form-field" key={f.key}>
+          <label className="form-label">
+            {f.label}{f.required && <span className="form-required"> *</span>}
+          </label>
+          <div className="form-chips-grid">
+            {f.options.map(o=>(
+              <button type="button" key={o}
+                className={`form-chip ${form[f.key]===o?"form-chip-active":""}`}
+                onClick={()=>set(f.key, form[f.key]===o ? "" : o)}
+                title={o}>
+                {o}
+              </button>
+            ))}
+          </div>
+          {f.allowCustom && (
+            <input className={`${inputCls} form-chips-custom`}
+              value={form[f.key]||""} onChange={e=>set(f.key,e.target.value)}
+              placeholder={f.placeholder||"หรือพิมพ์เอง..."}
+              autoComplete="off"/>
+          )}
+          {invalid && <div className="form-field-err">กรุณากรอกข้อมูลนี้</div>}
+        </div>
+      );
+    }
+    
     return (
       <div className="form-field" key={f.key}>
         <label className="form-label">
@@ -126,27 +155,6 @@ export default function EventForm({ event, onBack, onSaved }) {
             value={form[f.key]||""} onChange={e=>set(f.key,e.target.value)}>
             {f.options.map(o=><option key={o} value={o}>{o||"— เลือก —"}</option>)}
           </select>
-        ) : f.type==="chips" ? (
-          <>
-            <input className={inputCls}
-              list={`combo-${f.key}`}
-              value={form[f.key]||""}
-              onChange={e=>set(f.key,e.target.value)}
-              placeholder={f.placeholder||"พิมพ์หรือเลือก..."}
-              autoComplete="off"/>
-            <datalist id={`combo-${f.key}`}>
-              {f.options.filter(Boolean).map(o=><option key={o} value={o}/>)}
-            </datalist>
-            <div className="filter-chips form-chips">
-              {f.options.map(o=>(
-                <button type="button" key={o}
-                  className={`chip ${form[f.key]===o?"chip-active":""}`}
-                  onClick={()=>set(f.key, o)}>
-                  {o}
-                </button>
-              ))}
-            </div>
-          </>
         ) : f.type==="combo" ? (
           <>
             <input className={inputCls}
@@ -169,23 +177,24 @@ export default function EventForm({ event, onBack, onSaved }) {
     );
   }
 
-    const fields = [
+  const fields = [
     { key:"date",        label:"วันที่",           type:"date",     required:true },
-    { key:"time_raw",    label:"เวลา",              type:"text",     placeholder:"09:30 - 12:00 น." },
+    { key:"time_raw",    label:"เวลา",            type:"time" },
     { key:"title",       label:"ชื่อการประชุม",     type:"textarea", required:true, placeholder:"เช่น ประชุมคณะกรรมการบริหารงาน ครั้งที่ 1/2569" },
     { key:"location",    label:"สถานที่",           type:"text",     placeholder:"เช่น ห้องประชุมชั้น 2 อาคาร H.A. Slade" },
-    { key:"app",         label:"App",               type:"chips",    options:["Zoom","Teams","Google Meet","Cisco Webex","LINE"] },
-    { key:"event_type",  label:"ประเภทกิจกรรม",    type:"chips",    options:["ประชุมคณะทำงาน","ประชุมกรม","อมรม"] },
-    { key:"department",  label:"หน่วยงาน",          type:"text",     placeholder:"เช่น สำนักบริหารงานกลาง" },
+    { key:"app",         label:"App",               type:"chips",    options:["Zoom","Teams","Google Meet","Cisco Webex","LINE"], allowCustom:true, placeholder:"หรือพิมพ์ App อื่น..." },
+    { key:"event_type",  label:"ประเภทกิจกรรม",    type:"chips",    options:["ประชุมคณะทำงาน","ประชุมกรม","อมรม"], allowCustom:true, placeholder:"หรือพิมพ์ประเภทอื่น..." },
+    { key:"department",  label:"หน่วยงาน",          type:"combo",    options:deptList, placeholder:"พิมพ์หรือเลือกหน่วยงาน..." },
     { key:"coordinator", label:"ผู้ประสานงาน",      type:"text",     placeholder:"ชื่อ/เบอร์ต่อ" },
     { key:"assignee",    label:"ผู้รับผิดชอบ",      type:"text",     placeholder:"ชื่อ-นามสกุล ผู้รับผิดชอบ" },
-    { key:"status",      label:"สถานะ",             type:"chips",    options:["สร้าง link แล้ว","รอดำเนินการ","ยกเลิก","ย้ายวัน"], placeholder:"พิมพ์หรือเลือกสถานะ..." },
+    { key:"status",      label:"สถานะ",             type:"chips",    options:["สร้าง link แล้ว","รอดำเนินการ","ยกเลิก","ย้ายวัน"] },
     { key:"zoom_user",   label:"บัญชี Zoom/Teams",  type:"text",     placeholder:"เช่น บัญชีหลัก / Host 1" },
     { key:"meeting_link", label:"ลิงก์ประชุม", type:"text", placeholder:"https://zoom.us/j/..." },
     { key:"book_no",     label:"เลขที่หนังสือ",     type:"text",     placeholder:"เช่น ทส 0901.1/ว123" },
-    { key:"month_source",label:"เดือน (sheet)",     type:"chips",    options:MONTHS_TH.slice(1), placeholder:"พิมพ์หรือเลือกเดือน..." },
+    { key:"month_source",label:"เดือน (sheet)",     type:"chips",    options:MONTHS_TH.slice(1) },
     { key:"details",     label:"รายละเอียด",        type:"textarea", placeholder:"วาระการประชุม หรือหมายเหตุเพิ่มเติม" },
   ];
+
   return (
     <div className="screen detail-screen">
       {/* Header */}
@@ -193,7 +202,7 @@ export default function EventForm({ event, onBack, onSaved }) {
         <button className="btn-back" onClick={()=>window.history.back()}><Icon name="arrowLeft" size={15}/> กลับ</button>
         <div className="form-head-title-row">
           <span className="form-head-icon"><Icon name={isNew ? "plus" : "edit"} size={18}/></span>
-          <div>
+          <div className="form-head-title-col">
             <div className="form-head-title">
               {isNew ? "เพิ่มรายการใหม่" : "แก้ไขรายการ"}
             </div>
@@ -201,6 +210,7 @@ export default function EventForm({ event, onBack, onSaved }) {
               {isNew ? "กรอกข้อมูลการประชุมให้ครบถ้วน" : "ปรับปรุงข้อมูลการประชุมที่มีอยู่"}
             </div>
           </div>
+          <span className="form-head-badge">{isNew ? "ฟอร์มใหม่" : "แก้ไขข้อมูล"}</span>
         </div>
       </div>
 
@@ -230,46 +240,31 @@ export default function EventForm({ event, onBack, onSaved }) {
         </div>
 
         {err      && <div className="form-err"><Icon name="xCircle" size={16}/> {err}</div>}
-                 {success && <div className="form-success"><Icon name="checkCircle" size={16}/> {success}</div>}
+        {success && <div className="form-success"><Icon name="checkCircle" size={16}/> {success}</div>}
 
-                 {/* อัปโหลดรูปภาพ */}
-                 <div className="form-section-title form-section-c5"><Icon name="image" size={14}/> รูปภาพประกอบ </div>
-                 <div className="form-card form-card-c5">
-                   <input ref={imageInputRef} type="file" accept="image/*"
-                     onChange={handleImageChange} style={{display:"none"}}/>
-                   <button className="btn-upload-image" type="button"
-                     onClick={()=>imageInputRef.current?.click()}>
-                     <Icon name="image" size={16}/>
-                     <span>{imagePreview ? "เปลี่ยนรูปภาพ" : "เลือกรูปภาพ"}</span>
-                   </button>
-                   {imagePreview && (
-                     <img src={imagePreview} alt="preview"
-                       style={{width:"100%", maxWidth:360, borderRadius:8, marginTop:10}}/>
-                   )}
-                 </div>
+        <button className="btn-save" onClick={handleSave} disabled={saving}>
+          {saving ? "กำลังบันทึก..." : <><Icon name="save" size={17}/> บันทึก</>}
+        </button>
+        {!isNew && (
+          <button className="btn-delete" onClick={()=>setConfirmOpen(true)} disabled={deleting}>
+            {deleting ? "กำลังลบ..." : <><Icon name="trash" size={16}/> ลบรายการนี้</>}
+          </button>
+        )}
 
-                 <button className="btn-save" onClick={handleSave} disabled={saving}>
-                   {saving ? "กำลังบันทึก..." : <><Icon name="save" size={17}/> บันทึก</>}
-                 </button>
-                 {!isNew && (
-                   <button className="btn-delete" onClick={()=>setConfirmOpen(true)} disabled={deleting}>
-                     {deleting ? "กำลังลบ..." : <><Icon name="trash" size={16}/> ลบรายการนี้</>}
-                   </button>
-                 )}
+        <div style={{height:32}}/>
+      </div>
 
-                 <div style={{height:32}}/>
-               </div>
-               {confirmOpen && (
-                 <ConfirmSheet
-                   title="ยืนยันการลบรายการนี้?"
-                   message={form.title ? `"${form.title}" — กู้คืนได้ภายหลังจากถังขยะ` : undefined}
-                   confirmLabel="ลบรายการ"
-                   danger
-                   busy={deleting}
-                   onConfirm={handleDelete}
-                   onCancel={()=>setConfirmOpen(false)}
-                 />
-               )}
-             </div>
-           );
-          }
+      {confirmOpen && (
+        <ConfirmSheet
+          title="ยืนยันการลบรายการนี้?"
+          message={form.title ? `"${form.title}" — กู้คืนได้ภายหลังจากถังขยะ` : undefined}
+          confirmLabel="ลบรายการ"
+          danger
+          busy={deleting}
+          onConfirm={handleDelete}
+          onCancel={()=>setConfirmOpen(false)}
+        />
+      )}
+    </div>
+  );
+}

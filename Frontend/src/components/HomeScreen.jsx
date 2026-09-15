@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Icon from "../Icon";
 import { API } from "../api/events";
 import { MONTHS_TH, toDateStr, formatDateTH, dayOfWeekTH } from "../utils/date";
+import { ceToBeYear, beToCeYear } from "../utils/dateUtils";
 import { showToast } from "../utils/toast";
 import EventCard from "./EventCard";
 import PrintSheet from "./PrintSheet";
@@ -24,7 +25,7 @@ export default function HomeScreen({ events, uploadStats, onSelectEvent, onUploa
   const ydayEvs  = events.filter(e=>e.date===ydayStr);
 
   const thisMonth = today.getMonth()+1;
-  const thisYear  = today.getFullYear();
+  const thisYear  = ceToBeYear(today.getFullYear());
 
   const weekStart = new Date(today);
   weekStart.setDate(today.getDate()-(today.getDay()===0?6:today.getDay()-1));
@@ -55,7 +56,7 @@ export default function HomeScreen({ events, uploadStats, onSelectEvent, onUploa
         const hh = m ? parseInt(m[1]) : 0;
         const mm = m ? parseInt(m[2]) : 0;
         const [y, mo, d] = e.date.split("-").map(Number);
-        return { ...e, _start: new Date(y, mo - 1, d, hh, mm) };
+        return { ...e, _start: new Date(beToCeYear(y), mo - 1, d, hh, mm) };
       })
       .filter(e => !isNaN(e._start) && e._start >= now)
       .sort((a, b) => a._start - b._start);
@@ -108,12 +109,17 @@ export default function HomeScreen({ events, uploadStats, onSelectEvent, onUploa
       <div className={`next-meeting${nextMeeting ? "" : " is-empty"}`}>
         <div className="next-meeting-content">
           <div className="next-meeting-label">
-            <span className="next-meeting-label-icon"><Icon name="clock" size={18}/></span>
-            การประชุมครั้งถัดไป
+            <span className="next-meeting-label-left">
+              <span className="next-meeting-label-icon"><Icon name="clock" size={18}/></span>
+              การประชุมครั้งถัดไป
+            </span>
+            {nextMeeting && (
+              <span className="next-meeting-countdown">{countdownText(nextMeeting._start, new Date(nowTick))}</span>
+            )}
           </div>
           {nextMeeting ? (
             <>
-              <div className="next-meeting-countdown">{countdownText(nextMeeting._start, new Date(nowTick))}</div>
+              <div className="next-meeting-title">{nextMeeting.title || "-"}</div>
               <div className="next-meeting-info">
                 <div className="next-meeting-info-row">
                   <Icon name="calendar" size={15}/>
@@ -130,7 +136,6 @@ export default function HomeScreen({ events, uploadStats, onSelectEvent, onUploa
                   </div>
                 )}
               </div>
-              <div className="next-meeting-title">{nextMeeting.title || "-"}</div>
               <button className="next-meeting-btn" onClick={()=>onSelectEvent(nextMeeting)}>
                 ดูรายละเอียด ›
               </button>

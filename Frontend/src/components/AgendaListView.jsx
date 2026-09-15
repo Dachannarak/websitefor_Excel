@@ -59,7 +59,7 @@ return (
     .map(ev => (
     <div className="ev-row-menu-wrap" key={ev.id}>
       <div
-        className={`ev-row-panel ${getEventTypeCls(ev) || getCategoryCls(ev)}`}
+        className={`ev-row-panel ${getEventTypeCls(ev) || getCategoryCls(ev)} border-${getAppCls(ev.app)}`}
         onClick={()=>onSelectEvent(ev)}>
         <div className="ev-row-panel-bar"/>
         <div className="ev-row-icon">

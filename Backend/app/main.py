@@ -1,14 +1,46 @@
+import logging
 import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import func
 
 from .database import engine, Base, SessionLocal, UPLOAD_DIR
-from .models import ConferenceEvent, UploadLog
-from .routers import events, imports, uploads, reports, line_webhook
+from .models import ConferenceEvent
+from .routers import events, imports, reports, line_webhook
+
+logger = logging.getLogger(__name__)
 
 Base.metadata.create_all(bind=engine)
+
+
+def _warn_if_dates_not_migrated_to_be():
+    """เช็คตอน startup ว่ายังมีแถวที่ date เป็น ค.ศ. (ไม่ใช่ พ.ศ.) หลงเหลืออยู่ไหม
+    ป้องกันปัญหา reports/exports คืนค่าว่างเปล่าแบบไม่มี error แจ้งเตือน เพราะลืมรัน
+    Backend/migrations/001_migrate_year_to_be.py ตอน deploy
+    date เก็บเป็น string "YYYY-MM-DD" ปีเต็ม 4 หลักเสมอ จึงเทียบ prefix แบบ string ได้ตรงกับตัวเลข
+    """
+    db = SessionLocal()
+    try:
+        unmigrated = (
+            db.query(func.count(ConferenceEvent.id))
+            .filter(ConferenceEvent.date.isnot(None), ConferenceEvent.date != "")
+            .filter(func.substr(ConferenceEvent.date, 1, 4) < "2400")
+            .scalar()
+        )
+        if unmigrated:
+            logger.warning(
+                "พบ %d แถวใน conference_events ที่ date ยังเป็น ค.ศ. (ไม่ใช่ พ.ศ.) — "
+                "reports/reports export ที่กรองปีแบบ พ.ศ. จะคืนค่าผิด/ว่างเปล่าสำหรับแถวเหล่านี้ "
+                "โปรดรัน Backend/migrations/001_migrate_year_to_be.py",
+                unmigrated,
+            )
+    finally:
+        db.close()
+
+
+_warn_if_dates_not_migrated_to_be()
 
 app = FastAPI(
     title="Conference Schedule API",
@@ -36,7 +68,6 @@ app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 app.include_router(events.router)
 app.include_router(imports.router)
-app.include_router(uploads.router)
 app.include_router(reports.router)
 app.include_router(line_webhook.router)
 

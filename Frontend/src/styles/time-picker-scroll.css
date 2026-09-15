@@ -1,0 +1,432 @@
+/* ==========================================================================
+   time-picker-scroll.css — ตัวเลือกเวลา (ใช้คู่กับ TimePickerScroll.jsx เวอร์ชันใหม่)
+   แทนไฟล์ src/styles/time-picker-scroll.css เดิมทั้งไฟล์
+
+   1) ช่องเวลา (พิมพ์ได้ + ปุ่มล้าง + ปุ่มนาฬิกา)
+   2) หน้าต่าง (overlay, header)
+   3) ตัวเลือกด่วน (ช่วงที่ใช้บ่อย / เวลาเริ่ม / ระยะเวลา)
+   4) ล้อหมุน — ความสูงแถว/กรอบกำหนดใน JSX (ITEM_HEIGHT) ห้าม override ใน CSS
+   5) สรุปเวลา + ปุ่มล้าง
+   ========================================================================== */
+
+:root {
+  --tps-bg: #fff;
+  --tps-text: #2B2A26;
+  --tps-text-sub: #6B6862;
+  --tps-border: #EAE8E3;
+  --tps-bg-input: #F7F5F1;
+  --tps-shadow: rgba(30, 25, 15, .08);
+  --tps-accent: #1B5E20;          /* ตัวอักษร/ขอบที่เน้น */
+  --tps-accent-bg: #1B5E20;       /* พื้นปุ่มที่ถูกเลือก */
+  --tps-accent-soft: #F1F7F2;     /* พื้นแถบสรุปเวลา */
+  --tps-band: rgba(27, 94, 32, .07);
+  --tps-band-border: rgba(27, 94, 32, .25);
+  --tps-chip-bg: #fff;
+  --tps-chip-border: #D0D5DD;
+  --tps-chip-text: #344054;
+  --tps-muted: #667085;
+  --tps-danger: #B42318;
+}
+
+[data-theme="dark"] {
+  --tps-bg: #1B1B24;
+  --tps-text: #EDEDEF;
+  --tps-text-sub: #97979F;
+  --tps-border: rgba(255, 255, 255, .09);
+  --tps-bg-input: #242836;
+  --tps-shadow: rgba(0, 0, 0, .35);
+  --tps-accent: #A5D6A7;
+  --tps-accent-bg: #2E7D32;
+  --tps-accent-soft: rgba(129, 199, 132, .1);
+  --tps-band: rgba(129, 199, 132, .1);
+  --tps-band-border: rgba(129, 199, 132, .3);
+  --tps-chip-bg: rgba(255, 255, 255, .04);
+  --tps-chip-border: rgba(255, 255, 255, .14);
+  --tps-chip-text: #E5E7EB;
+  --tps-muted: #9CA3AF;
+  --tps-danger: #F97066;
+}
+
+
+/* ---------- 1) ช่องเวลา ---------- */
+.time-picker-scroll-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.time-picker-scroll-display {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+/* เว้นที่ด้านขวาให้ปุ่มล้าง + ปุ่มนาฬิกา (ใช้ !important เพราะสไตล์ .form-input ส่วนกลางแรงกว่า) */
+.time-picker-scroll-input {
+  width: 100% !important;
+  padding-right: 84px !important;
+  cursor: text;
+}
+.time-picker-scroll-field-btns {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  transform: translateY(-50%);
+}
+.time-picker-scroll-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--tps-text-sub);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.time-picker-scroll-icon-btn:hover {
+  background: var(--tps-bg-input);
+  color: var(--tps-text);
+}
+.time-picker-scroll-open {
+  color: var(--tps-accent);
+}
+.time-picker-scroll-open:hover {
+  color: var(--tps-accent);
+}
+.time-picker-scroll-clear:hover {
+  color: #EF4444;
+}
+
+
+/* ---------- 2) หน้าต่าง ---------- */
+.time-picker-scroll-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, .4);
+}
+.time-picker-scroll-modal {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 520px;
+  max-height: 88vh;
+  overflow: hidden;
+  background: var(--tps-bg);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 24px var(--tps-shadow);
+  animation: tpsSlideUp .25s ease;
+}
+@keyframes tpsSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.time-picker-scroll-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--tps-border);
+}
+.time-picker-scroll-header-title {
+  flex: 1;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--tps-text);
+}
+.time-picker-scroll-header-close,
+.time-picker-scroll-header-done {
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, opacity .15s;
+}
+.time-picker-scroll-header-close {
+  color: var(--tps-text-sub);
+}
+.time-picker-scroll-header-done {
+  color: var(--tps-accent);
+  font-weight: 700;
+}
+.time-picker-scroll-header-close:hover,
+.time-picker-scroll-header-done:hover {
+  background: var(--tps-bg-input);
+}
+.time-picker-scroll-header-done:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+  background: none;
+}
+
+
+/* ---------- 3) ตัวเลือกด่วน ---------- */
+/* ส่วนกลางเลื่อนได้ หัว/สรุปเวลา/ปุ่มล้างอยู่กับที่ */
+.tpq {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  padding: 14px 16px 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.tpq-group-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tps-chip-text);
+}
+.tpq-group-label small {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--tps-muted);
+}
+.tpq-group-label small.tpq-warn {
+  color: var(--tps-danger);
+}
+.tpq-grid {
+  display: grid;
+  gap: 6px;
+}
+.tpq-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.tpq-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+.tpq-chip {
+  box-sizing: border-box;
+  min-height: 40px;
+  padding: 6px 4px;
+  border: 1px solid var(--tps-chip-border);
+  border-radius: 10px;
+  background: var(--tps-chip-bg);
+  color: var(--tps-chip-text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.tpq-chip small {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--tps-muted);
+}
+.tpq-chip:hover {
+  border-color: var(--tps-muted);
+}
+.tpq-chip.on {
+  background: var(--tps-accent-bg);
+  border-color: var(--tps-accent-bg);
+  color: #fff;
+}
+.tpq-chip.on small {
+  color: rgba(255, 255, 255, .8);
+}
+.tpq-more {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 2px;
+  border: 0;
+  background: none;
+  color: var(--tps-accent);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tpq-more svg {
+  transition: transform .15s;
+}
+.tpq-more.open svg {
+  transform: rotate(180deg);
+}
+
+
+/* ---------- 4) ล้อหมุน ---------- */
+.time-picker-scroll-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 2px 0 8px;
+}
+.time-picker-scroll-section {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.time-picker-scroll-label-text {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--tps-text-sub);
+}
+.time-picker-scroll-inputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+.time-picker-scroll-sep {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--tps-text);
+}
+.time-picker-scroll-dash {
+  margin-top: 36px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tps-text-sub);
+}
+.scroll-wheel-wrap {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.scroll-wheel-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--tps-text-sub);
+  opacity: .75;
+}
+/* height ของกรอบ/แถว/spacer ถูกตั้งใน JSX (ITEM_HEIGHT) */
+.scroll-wheel-container {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--tps-border);
+  border-radius: 12px;
+  background: var(--tps-bg-input);
+}
+.scroll-wheel {
+  height: 100%;
+  overflow-y: scroll;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;   /* ปล่อยมือแล้วหยุดตรงแถวเสมอ */
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.scroll-wheel::-webkit-scrollbar {
+  display: none;
+}
+.scroll-wheel-spacer {
+  flex-shrink: 0;
+}
+.scroll-wheel-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--tps-text-sub);
+  opacity: .5;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity .15s, color .15s;
+}
+.scroll-wheel-item-active {
+  font-weight: 700;
+  color: var(--tps-accent);
+  opacity: 1;
+}
+/* แถบไฮไลต์เต็มแถว ตรงกับค่าที่เลือกจริง */
+.scroll-wheel-center-line {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  transform: translateY(-50%);
+  background: var(--tps-band);
+  border-top: 1px solid var(--tps-band-border);
+  border-bottom: 1px solid var(--tps-band-border);
+  pointer-events: none;
+}
+
+
+/* ---------- 5) สรุปเวลา + ปุ่มล้าง ---------- */
+.time-picker-scroll-preview {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  border-top: 1px solid var(--tps-border);
+  background: var(--tps-accent-soft);
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--tps-accent);
+}
+.time-picker-scroll-preview.is-invalid {
+  color: var(--tps-danger);
+}
+.time-picker-scroll-actions {
+  flex-shrink: 0;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--tps-border);
+}
+.time-picker-scroll-btn-clear {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--tps-border);
+  border-radius: 10px;
+  background: var(--tps-bg-input);
+  color: var(--tps-text-sub);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.time-picker-scroll-btn-clear:hover {
+  color: var(--tps-text);
+}
+
+
+/* ---------- จอเล็ก ---------- */
+/* ห้ามเปลี่ยนความสูงแถวล้อหมุนตรงนี้ (เป็นสาเหตุที่ตำแหน่งเพี้ยนในเวอร์ชันเดิม) */
+@media (max-width: 480px) {
+  .time-picker-scroll-modal {
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+  }
+  .time-picker-scroll-body {
+    gap: 8px;
+  }
+  .time-picker-scroll-preview {
+    padding: 10px 16px;
+    font-size: 18px;
+  }
+}
