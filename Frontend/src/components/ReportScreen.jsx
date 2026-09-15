@@ -9,6 +9,20 @@ import ConfirmSheet from "./ConfirmSheet";
 // Charts (Recharts)
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
+// รวมชื่อแอปที่สะกด/พิมพ์ต่างกันแต่หมายถึงแอปเดียวกัน (เช่น "ZOOM (HOST)", "Zoom Co-Host (...)")
+// ให้เข้ากลุ่มเดียว — ตรรกะเดียวกับ normalize_app_name ฝั่ง backend (routers/reports.py)
+// เพื่อให้กราฟในแอปกับรายงาน PDF นับจำนวนตรงกัน
+function normalizeAppName(name) {
+  const n = (name || "").trim();
+  if (!n) return "อื่นๆ";
+  const nLower = n.toLowerCase().replace(/\s+/g, "");
+  if (nLower.includes("zoom")) return "Zoom";
+  if (nLower.includes("team")) return "MS Teams";
+  if (nLower.includes("webex")) return "Webex";
+  if (nLower.includes("meet")) return "Google Meet";
+  return n;
+}
+
 // ---------------------------------------------------------------------------
 // ReportScreen — สรุปรายงาน
 // ---------------------------------------------------------------------------
@@ -21,14 +35,18 @@ export default function ReportScreen({ events, onShowTrash, onDeleteAll, onDataC
   const [deletingAll, setDeletingAll] = useState(false);
   const [dupDeleteTarget, setDupDeleteTarget] = useState(null);
   const [deletingDupId, setDeletingDupId] = useState(null);
+  const [showAllDepts, setShowAllDepts] = useState(false);
 
   // ============== KPI SUMMARY ==============
   // event.date เก็บเป็น พ.ศ. เสมอ (YYYY-MM-DD) — ต้องเทียบกับค่า พ.ศ. เท่านั้น ห้ามใช้ Date object ตรงๆ
   const totalEvents = events.length;
-  const thisMonth = events.filter(e => {
-    const [y, m] = e.date.split("-");
+  // รายการเฉพาะเดือน/ปีที่เลือกอยู่ — ใช้ scope เดียวกันนี้ให้ทั้ง KPI, การใช้งาน App, และอันดับหน่วยงาน
+  // ตรงกัน (เดิมสองส่วนหลังนับจาก events ทั้งหมดทั้งปี ทำให้ตัวเลขไม่ตรงกับ KPI "เดือนนี้")
+  const monthEvents = events.filter(e => {
+    const [y, m] = (e.date || "").split("-");
     return parseInt(y) === selectedYear && parseInt(m) === selectedMonth;
-  }).length;
+  });
+  const thisMonth = monthEvents.length;
 
   const now = new Date();
   const weekStart = new Date(now);
@@ -89,30 +107,31 @@ export default function ReportScreen({ events, onShowTrash, onDeleteAll, onDataC
     return data;
   };
 
-  // ============== APP DISTRIBUTION ==============
+  // ============== APP DISTRIBUTION (เฉพาะเดือน/ปีที่เลือก) ==============
   const getAppDistribution = () => {
     const apps = {};
-    events.forEach(e => {
-      const app = e.app?.replace("app-", "").toUpperCase() || "OTHER";
+    monthEvents.forEach(e => {
+      const app = normalizeAppName(e.app);
       apps[app] = (apps[app] || 0) + 1;
     });
-    return Object.entries(apps).map(([name, value]) => ({ name, value }));
+    return Object.entries(apps)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
   };
 
-  // ============== DEPARTMENT RANKING ==============
-  // แสดงแค่ Top 10 หน่วยงาน — ถ้าเอาทั้งหมดลิสต์จะยาวเกินไปเวลามีหลายสิบหน่วยงาน
+  // ============== DEPARTMENT RANKING (เฉพาะเดือน/ปีที่เลือก) ==============
+  // แสดงแค่ Top 10 หน่วยงานก่อน — ถ้าเอาทั้งหมดลิสต์จะยาวเกินไปเวลามีหลายสิบหน่วยงาน มีปุ่ม "ดูทั้งหมด" ให้กางดูเพิ่มได้
   const DEPT_RANKING_LIMIT = 10;
-  const getDepartmentRanking = () => {
+  const getFullDepartmentRanking = () => {
     const depts = {};
-    events.forEach(e => {
+    monthEvents.forEach(e => {
       if (e.department) {
         depts[e.department] = (depts[e.department] || 0) + 1;
       }
     });
     return Object.entries(depts)
       .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, DEPT_RANKING_LIMIT);
+      .sort((a, b) => b.count - a.count);
   };
 
   // ============== DUPLICATE CHECK ==============
@@ -153,6 +172,14 @@ export default function ReportScreen({ events, onShowTrash, onDeleteAll, onDataC
 
   // Colors for charts
   const appColors = ["#1F8A5C", "#A5D9C1", "#4FD1C5", "#06B6D4", "#0891B2"];
+
+  const appDistribution = getAppDistribution();
+  const appEventsTotal = appDistribution.reduce((sum, a) => sum + a.value, 0);
+  const appMaxValue = Math.max(1, ...appDistribution.map(a => a.value));
+
+  const fullDeptRanking = getFullDepartmentRanking();
+  const deptRanking = showAllDepts ? fullDeptRanking : fullDeptRanking.slice(0, DEPT_RANKING_LIMIT);
+  const deptMaxCount = Math.max(1, ...deptRanking.map(d => d.count));
 
   return (
     <div className="screen report-screen">
@@ -276,14 +303,19 @@ export default function ReportScreen({ events, onShowTrash, onDeleteAll, onDataC
       {/* App Distribution */}
       <div className="rpt-panel">
         <div className="rpt-panel-title">
-          <Icon name="pie" size={12} /> การใช้งาน App
+          <Icon name="pie" size={12} /> การใช้งาน App — {MONTHS_TH[selectedMonth]} {selectedYear}
         </div>
+        {appEventsTotal === 0 ? (
+          <div className="dup-result dup-result-good">
+            <Icon name="checkCircle" size={14} /> ไม่มีข้อมูลการประชุมในเดือนนี้
+          </div>
+        ) : (
         <div className="rpt-donut-wrap">
           <div className="rpt-donut-chart" style={{ position: "relative", width: "200px", height: "200px" }}>
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie
-                  data={getAppDistribution()}
+                  data={appDistribution}
                   dataKey="value"
                   cx="50%"
                   cy="50%"
@@ -292,20 +324,20 @@ export default function ReportScreen({ events, onShowTrash, onDeleteAll, onDataC
                   startAngle={90}
                   endAngle={450}
                 >
-                  {getAppDistribution().map((_, i) => (
+                  {appDistribution.map((_, i) => (
                     <Cell key={i} fill={appColors[i % appColors.length]} />
                   ))}
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
             <div className="rpt-donut-hole">
-              <div className="rpt-donut-hole-pct">{totalEvents}</div>
+              <div className="rpt-donut-hole-pct">{appEventsTotal}</div>
               <div className="rpt-donut-hole-lbl">ทั้งหมด</div>
             </div>
           </div>
 
           <div className="rpt-legend">
-            {getAppDistribution().map((app, i) => (
+            {appDistribution.map((app, i) => (
               <div key={i} className="rpt-app-row">
                 <div className="rpt-app-badge" style={{ backgroundColor: appColors[i % appColors.length] }}>
                   {app.name[0]}
@@ -313,35 +345,43 @@ export default function ReportScreen({ events, onShowTrash, onDeleteAll, onDataC
                 <div className="rpt-app-main">
                   <div className="rpt-app-top">
                     <span className="rpt-app-name">{app.name}</span>
-                    <span className="rpt-app-pct">{((app.value / totalEvents) * 100).toFixed(0)}%</span>
+                    <span className="rpt-app-pct">{((app.value / appEventsTotal) * 100).toFixed(0)}%</span>
                   </div>
                   <div className="rpt-app-bottom">
                     <div className="rpt-app-bar-wrap">
-                      <div className="rpt-app-bar-fill" style={{ width: `${(app.value / Math.max(...getAppDistribution().map(a => a.value))) * 100}%` }}></div>
+                      <div className="rpt-app-bar-fill" style={{ width: `${(app.value / appMaxValue) * 100}%` }}></div>
                     </div>
                     <div className="rpt-app-count">{app.value}</div>
                   </div>
                 </div>
               </div>
             ))}
-            <div className="rpt-legend-total">รวมทั้งหมด {totalEvents} รายการ</div>
+            <div className="rpt-legend-total">รวมทั้งหมด {appEventsTotal} รายการ</div>
           </div>
         </div>
+        )}
       </div>
 
       {/* Department Ranking */}
       <div className="rpt-panel">
         <div className="rpt-panel-title">
-          <Icon name="award" size={12} /> อันดับหน่วยงาน (Top {DEPT_RANKING_LIMIT})
+          <Icon name="award" size={12} /> อันดับหน่วยงาน — {MONTHS_TH[selectedMonth]} {selectedYear}
+          {!showAllDepts && fullDeptRanking.length > DEPT_RANKING_LIMIT && ` (Top ${DEPT_RANKING_LIMIT})`}
         </div>
+        {fullDeptRanking.length === 0 ? (
+          <div className="dup-result dup-result-good">
+            <Icon name="checkCircle" size={14} /> ไม่มีข้อมูลการประชุมในเดือนนี้
+          </div>
+        ) : (
+        <>
         <div className="rpt-dept-list">
-          {getDepartmentRanking().map((dept, i) => (
+          {deptRanking.map((dept, i) => (
             <div key={i} className={`rpt-dept-row rpt-dept-rank-${i < 3 ? i + 1 : ""}`}>
               <div className="rpt-dept-rank">{i + 1}</div>
               <div className="rpt-dept-info">
                 <div className="rpt-dept-name">{dept.name}</div>
                 <div className="rpt-dept-bar-wrap">
-                  <div className="rpt-dept-bar-fill" style={{ width: `${(dept.count / Math.max(...getDepartmentRanking().map(d => d.count))) * 100}%` }}></div>
+                  <div className="rpt-dept-bar-fill" style={{ width: `${(dept.count / deptMaxCount) * 100}%` }}></div>
                 </div>
               </div>
               <div className="rpt-dept-count">
@@ -351,6 +391,13 @@ export default function ReportScreen({ events, onShowTrash, onDeleteAll, onDataC
             </div>
           ))}
         </div>
+        {fullDeptRanking.length > DEPT_RANKING_LIMIT && (
+          <button className="btn-check-dup" onClick={() => setShowAllDepts(v => !v)}>
+            {showAllDepts ? "ย่อกลับ" : `ดูทั้งหมด (${fullDeptRanking.length})`}
+          </button>
+        )}
+        </>
+        )}
       </div>
 
       {/* Data Health Check */}

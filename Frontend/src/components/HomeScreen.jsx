@@ -52,9 +52,11 @@ export default function HomeScreen({ events, uploadStats, onSelectEvent, onUploa
     const parsed = events
       .filter(e => e.date && !(e.status?.includes("ยกเลิก")))
       .map(e => {
+        // ไม่ระบุเวลา (เช่น "-") → ถือว่ายังไม่ผ่านไปจนกว่าจะสิ้นวันนั้น ไม่ใช่เที่ยงคืน (00:00)
+        // ไม่งั้นรายการที่ไม่มีเวลาของ "วันนี้" จะถูกมองว่าผ่านไปแล้วตลอดทั้งวันทันทีหลังเที่ยงคืน
         const m = (e.time_raw || "").match(/(\d{1,2})[.:](\d{2})/);
-        const hh = m ? parseInt(m[1]) : 0;
-        const mm = m ? parseInt(m[2]) : 0;
+        const hh = m ? parseInt(m[1]) : 23;
+        const mm = m ? parseInt(m[2]) : 59;
         const [y, mo, d] = e.date.split("-").map(Number);
         return { ...e, _start: new Date(beToCeYear(y), mo - 1, d, hh, mm) };
       })
