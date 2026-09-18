@@ -14,7 +14,6 @@ export default function UploadSheet({ onClose, onImported }) {
   const [importing, setImporting] = useState(false);
   const [result,    setResult]    = useState(null);
   const excelRef = useRef(null);
-  const imageRef = useRef(null);
 
   async function handleExcelSelect(e) {
     const f = e.target.files[0]; e.target.value = "";
@@ -53,24 +52,6 @@ export default function UploadSheet({ onClose, onImported }) {
 
   function handleUploadAnother() {
     setPreview(null); setResult(null); setErr(null);
-  }
-
-  async function handleImage(e) {
-    const f = e.target.files[0]; e.target.value = "";
-    if (!f) return;
-    setUploading(true); setErr(null);
-    try {
-      const form = new FormData();
-      form.append("file", f);
-      const res = await fetch(`${API}/api/v1/import-image`, { method:"POST", body:form });
-      const text = await res.text();
-      const data = text ? JSON.parse(text) : {};
-      if (!res.ok) throw new Error(data.detail || "upload ไม่สำเร็จ");
-      setResult(data);
-      showToast("อัปโหลดรูปภาพสำเร็จ");
-      await onImported();
-    } catch(e) { setErr(e.message); }
-    finally { setUploading(false); }
   }
 
   //---- หน้า Preview ----//
@@ -151,8 +132,6 @@ return (
 
       <input ref={excelRef} type="file" accept=".xlsx,.xls"
         onChange={handleExcelSelect} disabled={uploading} style={{display:"none"}}/>
-      <input ref={imageRef} type="file" accept="image/*"
-        onChange={handleImage} disabled={uploading} style={{display:"none"}}/>
 
       <div className="upload-options">
         <button className={`btn-upload-opt ${uploading?"btn-file-loading":""}`}
@@ -161,12 +140,6 @@ return (
          <span className="upload-opt-label">ไฟล์ Excel</span>
          <span className="upload-opt-sub">.xlsx / .xls</span>
          </button>
-         <button className={`btn-upload-opt ${uploading?"btn-file-loading":""}`}
-          onClick={()=>imageRef.current?.click()} disabled={uploading}>
-          <Icon name="image" size={20}/>
-          <span className="upload-opt-label">รูปภาพอ้างอิง</span>
-          <span className="upload-opt-sub">.png / .jpg / .webp</span>
-          </button>
         </div>
 
         {uploading && <div className="sheet-loading"><span className="spinner-sm"/> กำลังประมวลผล...</div>}

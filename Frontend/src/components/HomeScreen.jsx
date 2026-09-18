@@ -183,12 +183,6 @@ export default function HomeScreen({ events, uploadStats, onSelectEvent, onUploa
               <div className="upload-history-num">{uploadStats.excel}</div>
               <div className="upload-history-unit">ครั้ง</div>
             </div>
-            <div className="upload-history-vline"/>
-            <div className="upload-history-col">
-              <div className="upload-history-icon-row"><Icon name="image" size={15}/> รูปภาพ</div>
-              <div className="upload-history-num">{uploadStats.image}</div>
-              <div className="upload-history-unit">ครั้ง</div>
-            </div>
           </div>
           {uploadStats.last_uploaded_at && (
             <div className="upload-history-footer">

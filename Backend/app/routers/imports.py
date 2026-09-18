@@ -12,7 +12,6 @@ from ..file_utils import read_capped as _read_capped
 from ..models import ConferenceEvent, UploadLog
 from ..schemas import ImportResultOut
 from ..services.conference_service import process_conference_excel
-from ..services.image_service import process_conference_image
 
 router = APIRouter(prefix="/api/v1", tags=["Import"])
 
@@ -290,42 +289,6 @@ async def import_excel(
     )
 
 
-_IMAGE_EXTS       = (".png", ".jpg", ".jpeg", ".webp", ".gif")
-_MAX_IMAGE_BYTES  = 10 * 1024 * 1024   # 10 MB
-
-
-@router.post("/import-image", response_model=ImportResultOut)
-async def import_image(
-    file: UploadFile = File(...),
-    db:   Session   = Depends(get_db),
-):
-    if not file.filename or not file.filename.lower().endswith(_IMAGE_EXTS):
-        raise HTTPException(status_code=400, detail="กรุณาอัปโหลดรูปภาพ (.png / .jpg / .jpeg / .webp)")
-
-    contents = await _read_capped(file, _MAX_IMAGE_BYTES, "ไฟล์ใหญ่เกิน 10 MB")
-    if not contents:
-        raise HTTPException(status_code=400, detail="ไฟล์ว่างเปล่า")
-
-    try:
-        result = process_conference_image(contents, file.filename)
-    except Exception as e:
-        raise HTTPException(status_code=422, detail=f"บันทึกรูปภาพไม่สำเร็จ: {str(e)}")
-
-    try:
-        db.add(UploadLog(file_type="image", filename=file.filename or "", records=0))
-        db.commit()
-    except Exception:
-        db.rollback()
-        logger.exception("บันทึก UploadLog ไม่สำเร็จระหว่าง import-image")
-        raise HTTPException(status_code=500, detail="บันทึก log ไม่สำเร็จ — กรุณาลองใหม่หรือติดต่อผู้ดูแลระบบ")
-
-    return ImportResultOut(
-        success=True,
-        message=f"บันทึกรูปภาพสำเร็จ — {result['image_url']}",
-        total_records=0,
-        sheets=[],
-        skipped_rows=0,
-    )
 
 @router.get("/check-duplicates")
 def check_duplicates(db: Session = Depends(get_db)):
@@ -368,10 +331,8 @@ def check_duplicates(db: Session = Depends(get_db)):
 @router.get("/upload-stats")
 def get_upload_stats(db: Session = Depends(get_db)):
     excel_count = db.query(UploadLog).filter(UploadLog.file_type == "excel").count()
-    image_count = db.query(UploadLog).filter(UploadLog.file_type == "image").count()
     last = db.query(UploadLog).order_by(UploadLog.uploaded_at.desc()).first()
     return {
         "excel": excel_count,
-        "image": image_count,
         "last_uploaded_at": last.uploaded_at.isoformat() if last else None,
     }
