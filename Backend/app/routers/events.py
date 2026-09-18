@@ -7,6 +7,7 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, HTTPException, Response
 from fastapi.responses import StreamingResponse
 from sqlalchemy import extract
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from typing import Optional
 from pydantic import BaseModel, Field
@@ -239,7 +240,11 @@ def create_event(body: EventIn, background_tasks: BackgroundTasks, db: Session =
     data = {k: (v if v is not None else _CREATE_DEFAULTS[k]) for k,v in body.model_dump().items()}
     ev = ConferenceEvent(**data)
     db.add(ev)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="มีรายการวันที่/เวลา/ชื่อเรื่องนี้อยู่แล้วในระบบ กรุณาเปลี่ยนวันที่ เวลา หรือชื่อเรื่องให้ต่างจากรายการเดิม")
     db.refresh(ev)
 
     from ..services.line_service import send_line_flex_new
@@ -263,7 +268,11 @@ def update_event(event_id: int, body: EventIn, background_tasks: BackgroundTasks
 
     for key, val in body.model_dump(exclude_unset=True).items():
         setattr(ev, key, "" if val is None else val)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="มีรายการวันที่/เวลา/ชื่อเรื่องนี้อยู่แล้วในระบบ กรุณาเปลี่ยนวันที่ เวลา หรือชื่อเรื่องให้ต่างจากรายการเดิม")
     db.refresh(ev)
 
     #แจ้งเตือนเมื่อมีฟิลด์ที่ติดตามเปลี่ยนแปลงจริง
