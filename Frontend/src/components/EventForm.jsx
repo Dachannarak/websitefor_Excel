@@ -36,6 +36,19 @@ export default function EventForm({ event, events, onBack, onSaved }) {
   const [fieldErr,    setFieldErr]    = useState({});
   const [success,     setSuccess]     = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [kbOffset,    setKbOffset]    = useState(0);
+
+  // มือถือ: คีย์บอร์ดที่เปิดค้างจากช่องกรอกก่อนหน้าบังปุ่ม "บันทึก" บางส่วน ทำให้แตะแล้วไม่โดนปุ่ม
+  // ต้องดันปุ่มขึ้นตามความสูงคีย์บอร์ดจริง (visualViewport) ปุ่มถึงจะอยู่เหนือคีย์บอร์ดเสมอ
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => setKbOffset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+    vv.addEventListener("resize", onResize);
+    vv.addEventListener("scroll", onResize);
+    onResize();
+    return () => { vv.removeEventListener("resize", onResize); vv.removeEventListener("scroll", onResize); };
+  }, []);
 
   function set(key, val) {
     setForm(f=>({...f,[key]:val}));
@@ -242,14 +255,16 @@ export default function EventForm({ event, events, onBack, onSaved }) {
         {err      && <div className="form-err"><Icon name="xCircle" size={16}/> {err}</div>}
         {success && <div className="form-success"><Icon name="checkCircle" size={16}/> {success}</div>}
 
-        <button className="btn-save" onClick={handleSave} disabled={saving}>
-          {saving ? "กำลังบันทึก..." : <><Icon name="save" size={17}/> บันทึก</>}
-        </button>
-        {!isNew && (
-          <button className="btn-delete" onClick={()=>setConfirmOpen(true)} disabled={deleting}>
-            {deleting ? "กำลังลบ..." : <><Icon name="trash" size={16}/> ลบรายการนี้</>}
+        <div className="form-actions-sticky" style={{ bottom: kbOffset }}>
+          <button className="btn-save" onClick={handleSave} disabled={saving}>
+            {saving ? "กำลังบันทึก..." : <><Icon name="save" size={17}/> บันทึก</>}
           </button>
-        )}
+          {!isNew && (
+            <button className="btn-delete" onClick={()=>setConfirmOpen(true)} disabled={deleting}>
+              {deleting ? "กำลังลบ..." : <><Icon name="trash" size={16}/> ลบรายการนี้</>}
+            </button>
+          )}
+        </div>
 
         <div style={{height:32}}/>
       </div>

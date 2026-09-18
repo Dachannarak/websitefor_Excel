@@ -650,6 +650,10 @@ body.sheet-open .fab-theme {
 .btn-delete { display:flex; align-items:center; justify-content:center; gap:8px; background:var(--white); color:var(--red); border:1.5px solid var(--red); padding:13px; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; width:100%; margin-top:8px; }
 .btn-delete:disabled { opacity:.5; cursor:not-allowed; }
 
+/* กันปุ่มบันทึก/ลบ ถูกคีย์บอร์ดมือถือบัง — เลื่อนตัวขึ้นตามความสูงคีย์บอร์ดจริง (ตั้งผ่าน inline style bottom) */
+.form-actions-sticky { position: sticky; z-index: 5; background: var(--bg); padding-top: 8px; margin-top: 8px; }
+.form-actions-sticky .btn-save { margin-top: 0; }
+
 /* ===== Report Screen ===== */
 .rpt-head           { background: var(--hero-grad); box-shadow: var(--shadow-hero); color:#fff; padding:16px 16px 20px; }
 .rpt-head-title     { font-size:18px; font-weight:800; display:flex; align-items:center; gap:8px; }
