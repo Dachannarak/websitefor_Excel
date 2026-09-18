@@ -1,0 +1,184 @@
+:root {
+  --primary-green: #1F8A5C;
+}
+
+/* sheet นี้สูงเกือบเต็มจอ — ซ่อน TabBar/FAB ไว้ระหว่างเปิด กันไม่ให้มาทับขอบล่างจนเลื่อนดูรายการสุดท้ายไม่ได้ */
+body.day-detail-sheet-open .tabbar,
+body.day-detail-sheet-open .fab-group,
+body.day-detail-sheet-open .fab-main,
+body.day-detail-sheet-open .fab-theme {
+  display: none !important;
+}
+
+/* ==== Day Detail Sheet ==== */
+.day-detail-sheet {
+  align-items: stretch;
+  max-height: 92vh;
+  max-height: 92dvh;
+  overflow: hidden;
+  /* กันไม่ให้ขอบล่างของ sheet ไปชนแถบไอคอน/gesture bar ของระบบ บนมือถือที่มี safe-area-inset-bottom */
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+}
+
+.day-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+  border-bottom: 1px solid var(--grid-line);
+  padding-bottom: 10px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.day-detail-dow {
+  font-size: 12px;
+  color: var(--text-sub);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.day-detail-date {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 4px;
+}
+
+.day-detail-count {
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-top: 3px;
+  font-weight: 500;
+}
+
+.day-detail-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding-bottom: 8px;
+}
+
+/* ==== Event list item (BEM) ==== */
+.event-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--green-mid);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.event-list-item__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.event-list-item__main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.event-list-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.event-list-item__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
+.event-list-item__time {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-sub);
+  flex-shrink: 0;
+}
+
+.event-list-item__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.event-list-item__status {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* "พร้อมแล้ว" ใช้สีเขียว primary คงที่ ไม่เปลี่ยนตาม theme เหมือน --green-mid */
+.event-list-item__status.s-done {
+  color: var(--primary-green);
+  border-color: var(--primary-green);
+}
+
+.event-list-item__actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.event-list-item__action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-sub);
+  border-radius: 8px;
+  transition: color .15s, background .15s;
+}
+
+.event-list-item__action-btn:hover {
+  background: var(--white);
+  color: var(--text);
+}
+
+.event-list-item__action-btn--danger:hover {
+  color: var(--red);
+}
+
+/* Mobile */
+.event-list-item { padding: 12px; }
+
+/* Tablet */
+@media (min-width: 481px) {
+  .event-list-item { padding: 14px; }
+}
+
+/* Desktop */
+@media (min-width: 769px) {
+  .event-list-item { padding: 16px; }
+}

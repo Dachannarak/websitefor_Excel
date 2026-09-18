@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import "./App.css";
-import { API, ADMIN_HEADERS, softDeleteAllEvents } from "./api/events";
+import { API, ADMIN_HEADERS, softDeleteAllEvents, deleteEventById } from "./api/events";
 import { formatDateTH } from "./utils/date";
+import { ceToBeYear } from "./utils/dateUtils";
 import { showToast } from "./utils/toast";
 import ToastHost from "./components/ToastHost";
 import EventForm from "./components/EventForm";
@@ -33,6 +34,9 @@ function AppRoot() {
   const [darkMode,     setDarkMode]     = useState(false);
   const [calFocusDate, setCalFocusDate] = useState(null);
   const [calViewMode,  setCalViewMode]  = useState("agenda"); // "agenda" | "grid" — เก็บไว้ที่นี่ ไม่ให้รีเซ็ตตอนกดกลับจากหน้ารายละเอียด
+  // เดือน/ปีที่กำลังดูอยู่ในปฏิทิน — เก็บไว้ที่นี่เหมือน calViewMode เพื่อไม่ให้รีเซ็ตกลับเดือนปัจจุบันตอนกด "กลับ" จากหน้ารายละเอียด/แก้ไข
+  const [calYear,  setCalYear]  = useState(ceToBeYear(new Date().getFullYear()));
+  const [calMonth, setCalMonth] = useState(new Date().getMonth() + 1);
 
   useEffect(() => {
     document.documentElement.setAttribute(
@@ -171,8 +175,22 @@ function AppRoot() {
             onFocusDateApplied={()=>setCalFocusDate(null)}
             viewMode={calViewMode}
             onViewModeChange={setCalViewMode}
+            year={calYear}
+            month={calMonth}
+            onYearChange={setCalYear}
+            onMonthChange={setCalMonth}
             onSelectEvent={setDetail}
             onEventDeleted={fetchEvents}
+            onEditEvent={(ev)=>setEditEvent(ev)}
+            onDeleteEvent={async (id) => {
+              try {
+                await deleteEventById(id);
+                await fetchEvents();
+                showToast("ลบรายการแล้ว", "error");
+              } catch (err) {
+                showToast(err?.message || "ลบรายการไม่สำเร็จ", "error");
+              }
+            }}
             onEventDateChange={async (ev, newDate) => {
               const res = await fetch(`${API}/events/${ev.id}`, {
                 method: "PUT",

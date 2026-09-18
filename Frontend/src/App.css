@@ -509,9 +509,16 @@ body { line-height: 1.5; }
 .tab-icon  { display: flex; }
 .tab-label { font-size: 10px; margin-top: 2px; font-weight: 600; }
 
+body.sheet-open .tabbar,
+body.sheet-open .fab-group,
+body.sheet-open .fab-main,
+body.sheet-open .fab-theme {
+  display: none !important;
+}
+
 /* ===== Upload Sheet ===== */
 .sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: flex-end; justify-content: center; z-index: 250; }
-.sheet         { background: var(--white); border-radius: 18px 18px 0 0; padding: 12px 20px 32px; width: 100%; max-width: var(--max-w); display: flex; flex-direction: column; align-items: center; gap: 12px; box-shadow: var(--shadow-md); }
+.sheet         { background: var(--white); border-radius: 18px 18px 0 0; padding: 12px 20px calc(32px + env(safe-area-inset-bottom)); width: 100%; max-width: var(--max-w); max-height: 88vh; max-height: 88dvh; overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 12px; box-shadow: var(--shadow-md); }
 .sheet-handle  { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 4px; }
 .sheet-title   { font-size: 16px; font-weight: 700; color: var(--text); }
 .sheet-sub     { font-size: 13px; color: var(--text-sub); text-align: center; line-height: 1.5; }
@@ -1205,6 +1212,7 @@ button:active { transform: scale(.96); }
 /* ==== Calendar Filter ==== */
 .cal-filter-btn { position: relative; }
 .cal-filter-btn.has-filter { border-color: var(--green-mid); background: var(--green-light); }
+.cal-nav-btn.open { border-color: var(--green-mid); background: var(--green-mid); color: #fff; }
 .cal-filter-panel { margin: 0 0 12px; }
 
 /* ==== Calendar view Toggle ==== */

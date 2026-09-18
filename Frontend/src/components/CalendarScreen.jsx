@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import Icon from "../Icon";
-import { MONTHS_TH, DAYS_SHORT, toDateStr, getDayCls, formatDateTH, dayOfWeekTH } from "../utils/date";
+import { MONTHS_TH, DAYS_SHORT, toDateStr, getDayCls, formatDateTH } from "../utils/date";
 import { ceToBeYear, beToCeYear } from "../utils/dateUtils";
 import { getEventTypeCls, getCategoryCls, getAppCls } from "../utils/eventStyle";
 import { showToast } from "../utils/toast";
 import { MoreEventsBadge } from "./DayTimeline";
 import AgendaListView from "./AgendaListView";
 import { ThaiDatePicker } from "../ThaiDatePicker";
-
+import { DayDetailSheet } from './DayDetailSheet';
+import '../styles/day-detail-sheet.css';
 const APP_OPTIONS = [
   {val:"app-zoom",  label:"Zoom"},
   {val:"app-teams", label:"Teams"},
@@ -17,12 +18,12 @@ const APP_OPTIONS = [
   {val:"app-other", label:"อื่นๆ"},
 ];
 
-export default function CalendarScreen({ events, focusDate, onFocusDateApplied, onSelectEvent, onEventDateChange, onEventDeleted, viewMode, onViewModeChange }) {
+export default function CalendarScreen({ events, focusDate, onFocusDateApplied, onSelectEvent, onEventDateChange, onEventDeleted, onEditEvent, onDeleteEvent, viewMode, onViewModeChange, year, month, onYearChange, onMonthChange }) {
   const today = new Date();
   const setViewMode = onViewModeChange; // "agenda" | "grid" — state อยู่ที่ App.jsx เพื่อให้กด "กลับ" จากหน้ารายละเอียดแล้วยังอยู่มุมมองเดิม ไม่รีเซ็ตกลับ "รายการ"
-  // year state เก็บเป็น พ.ศ. เสมอ ให้ตรงกับ event.date และ focusDate ที่เป็น พ.ศ. — ต้องแปลงเป็น ค.ศ. ก่อนทำ Date math เท่านั้น
-  const [year,   setYear]  = useState(ceToBeYear(today.getFullYear()));
-  const [month,  setMonth] = useState(today.getMonth()+1);
+  // year/month ก็เก็บที่ App.jsx เช่นกัน (เหตุผลเดียวกับ viewMode) — ไม่งั้นกด "กลับ" จากหน้ารายละเอียด/แก้ไขแล้ว CalendarScreen unmount-remount จะรีเซ็ตกลับเดือนปัจจุบันเสมอ
+  const setYear  = onYearChange;
+  const setMonth = onMonthChange;
   const todayStr = toDateStr(today);
   const firstday = new Date(beToCeYear(year),month-1,1).getDay();
   const daysInMonth = new Date(beToCeYear(year),month,0).getDate();
@@ -32,12 +33,16 @@ export default function CalendarScreen({ events, focusDate, onFocusDateApplied, 
   const [yearGridStart, setYearGridStart] = useState(() => ceToBeYear(today.getFullYear()) - 5);
   const [justAddedDate, setJustAddedDate] = useState(null);
   const [openMoreDate, setOpenMoreDate] = useState(null); // วันที่ที่กำลังเปิด popup "+N" อยู่ — เปิดได้ทีละอันเท่านั้น กดอันใหม่แล้วอันเก่าปิดอัตโนมัติ
-  const [showAllDayEvs, setShowAllDayEvs] = useState(false);
-  const [showAllDayEvsDate, setShowAllDayEvsDate] = useState(selectedDate);
-  if (selectedDate !== showAllDayEvsDate) {
-    setShowAllDayEvsDate(selectedDate);
-    setShowAllDayEvs(false);
-  }
+  const [selectedDayForDetail, setSelectedDayForDetail] = useState(null);
+  const [selectedDayEvents, setSelectedDayEvents] = useState([]);
+  const [showDayDetail, setShowDayDetail] = useState(false);
+
+  // ซ่อน TabBar/FAB ตอนเปิด sheet เลือกเดือน/ปี — เช่นเดียวกับ DayDetailSheet บนมือถือบางรุ่น TabBar (fixed, z-index ต่ำกว่า) ยังโผล่ทับปุ่ม "ปิด" ที่ขอบล่างของ sheet
+  useEffect(() => {
+    if (!showMonthPicker) return;
+    document.body.classList.add("sheet-open");
+    return () => document.body.classList.remove("sheet-open");
+  }, [showMonthPicker]);
 
   // เปิดหน้าปฏิทินตรงเดือน/วันของรายการที่เพิ่งสร้างเสร็จ แทนที่จะรีเซ็ตกลับไปเดือนปัจจุบันเสมอ
   // สลับไปมุมมองปฏิทิน (grid) เพื่อให้เห็นตัวเลข +N ที่อัปเดต และไฮไลต์ช่องนั้นชั่วครู่ให้สังเกตง่าย
@@ -53,7 +58,7 @@ export default function CalendarScreen({ events, focusDate, onFocusDateApplied, 
     onFocusDateApplied?.();
     const t = setTimeout(() => setJustAddedDate(null), 2200);
     return () => clearTimeout(t);
-  }, [focusDate, onFocusDateApplied, setViewMode]);
+  }, [focusDate, onFocusDateApplied, setViewMode, setYear, setMonth]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const [updatingId, setUpdatingId] = useState(null);
@@ -101,7 +106,6 @@ export default function CalendarScreen({ events, focusDate, onFocusDateApplied, 
       const k = normDate(e.date);
       acc[k]=acc[k]||[]; acc[k].push(e); return acc;
     },{});
-    const selectedEvs = byDate[normDate(selectedDate)] || [];
   const cells=[];
   for(let i=0;i<firstday;i++) cells.push(null);
   for(let d=1;d<=daysInMonth;d++) cells.push(d);
@@ -171,7 +175,27 @@ export default function CalendarScreen({ events, focusDate, onFocusDateApplied, 
       }
     }
 
-
+  function handleDayClick(dayDateStr, dayEvents) {
+    setSelectedDate(dayDateStr);
+    setSelectedDayForDetail(dayDateStr);
+    setSelectedDayEvents(dayEvents);
+    setShowDayDetail(true);
+  }
+  function handleDayDetailClose() {
+    setShowDayDetail(false);
+  }
+  function handleEventClick(ev) {
+    onSelectEvent(ev);
+    setShowDayDetail(false);
+  }
+  function handleEventEdit(ev) {
+    onEditEvent(ev);
+    setShowDayDetail(false);
+  }
+  function handleEventDelete(ev) {
+    onDeleteEvent(ev.id);
+    setShowDayDetail(false);
+  }
 
 return (
   <div className="screen screen-calendar">
@@ -184,14 +208,14 @@ return (
             </div>
             <div className="cal-header-right">
               <button
-                className="cal-nav-btn cal-month-btn"
+                className={`cal-nav-btn cal-month-btn${showMonthPicker?" open":""}`}
                 onClick={()=>setShowMonthPicker(true)}
                 title="เลือกเดือน/ปี"
                 aria-label="เลือกเดือน/ปี">
                 <Icon name="calendar" size={15}/>
                 </button>
               <button
-                className={`cal-nav-btn cal-filter-btn${hasFilter?" has-filter":""}`}
+                className={`cal-nav-btn cal-filter-btn${hasFilter?" has-filter":""}${showFilter?" open":""}`}
                 onClick={()=>setShowFilter(f=>!f)}
                 title="กรองรายการ"
                 aria-label="กรองรายการ"
@@ -322,7 +346,7 @@ return (
         return (
           <div key={ds} data-cal-date={ds}
           className={`cal-cell-a ${isSel?"cal-cell-sel":""} ${isToday?"cal-cell-today":""} ${isDragOver?"cal-cell-dragover":""} ${isJustAdded?"cal-cell-just-added":""}`}
-          onClick={()=>setSelectedDate(ds)}>
+          onClick={()=>handleDayClick(ds, evs)}>
           <div className={`cal-d-a ${getDayCls(ds)} ${isToday?"cal-today-ring":""}`}>{d}</div>
           <div className="cal-ev-list">
             {shownEvs.map(renderEvRow)}
@@ -346,35 +370,15 @@ return (
            onEventDeleted ={onEventDeleted}
         />
        )}
-       {viewMode == "grid" && selectedDate && (
-         <>
-           <div className="cal-day-panel-backdrop" onClick={()=>setSelectedDate("")}/>
-           <div className="cal-day-panel cal-day-panel-compact">
-             <div className="cal-day-label-compact">
-               <div className="cal-day-info">
-                 <div className="cal-day-dow-compact">{dayOfWeekTH(selectedDate)}</div>
-                 <div className="cal-day-fulldate-compact">{formatDateTH(selectedDate)}</div>
-                 <div className="cal-day-count-compact">{selectedEvs.length} รายการ</div>
-               </div>
-               <button className="cal-day-panel-close-compact" onClick={()=>setSelectedDate("")} aria-label="ปิด">
-                 <Icon name="x" size={14}/>
-               </button>
-             </div>
-             <div className="cal-day-events-compact">
-               {selectedEvs.slice(0, showAllDayEvs ? selectedEvs.length : 3).map(ev => (
-                 <div key={ev.id} className="cal-day-ev-compact" onClick={() => onSelectEvent(ev)}>
-                   <span className="cal-day-ev-time">{(ev.time_raw?.match(/\d{1,2}[.:]\d{2}/) || [""])[0]}</span>
-                   <span className="cal-day-ev-title">{ev.title?.substring(0, 20)}</span>
-                 </div>
-               ))}
-               {!showAllDayEvs && selectedEvs.length > 3 && (
-                 <button className="cal-day-ev-more" onClick={() => setShowAllDayEvs(true)}>
-                   ดูเพิ่มเติม ({selectedEvs.length - 3})
-                 </button>
-               )}
-             </div>
-           </div>
-         </>
+       {showDayDetail && (
+         <DayDetailSheet
+           date={selectedDayForDetail}
+           events={selectedDayEvents}
+           onClose={handleDayDetailClose}
+           onEventClick={handleEventClick}
+           onEventEdit={handleEventEdit}
+           onEventDelete={handleEventDelete}
+         />
        )}
 
 {drag && (
